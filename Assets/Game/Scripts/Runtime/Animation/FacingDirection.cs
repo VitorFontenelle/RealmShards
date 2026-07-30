@@ -23,10 +23,10 @@ namespace RealmShards
                 return FacingDirection8.South;
             }
 
+            // Atan2: 0° = East, 90° = North, ±180° = West, -90° = South.
+            // Map so 0 = South, then counter-clockwise in 45° steps (SE, E, NE, N, NW, W, SW).
             float angle = Mathf.Atan2(direction.y, direction.x) * Mathf.Rad2Deg;
-            // Convert so 0 = South, increasing counter-clockwise in 45° steps.
-            // Atan2: 0 = East, 90 = North, ±180 = West, -90 = South
-            float normalized = (90f - angle + 360f) % 360f;
+            float normalized = (angle + 90f + 360f) % 360f;
             int index = Mathf.RoundToInt(normalized / 45f) % 8;
             return (FacingDirection8)index;
         }

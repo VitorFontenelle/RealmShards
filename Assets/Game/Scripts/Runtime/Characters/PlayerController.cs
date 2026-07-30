@@ -45,7 +45,13 @@ namespace RealmShards
 
         private void LateUpdate()
         {
-            if (aim != null)
+            // While moving, facing must follow movement keys (8-dir), not mouse aim.
+            // Aim still drives casting / idle look when standing still.
+            if (motor != null && motor.IsMoving && motor.MoveInput.sqrMagnitude > 0.01f)
+            {
+                animator?.SetFacingFromVector(motor.MoveInput);
+            }
+            else if (aim != null)
             {
                 animator?.SetFacingFromVector(aim.AimDirection);
             }

@@ -109,7 +109,7 @@ namespace RealmShards.Enemies
 
         protected virtual void Update()
         {
-            if (Health == null || !Health.IsAlive)
+            if (Health == null || !Health.IsAlive || State == EnemyFsmState.Dead)
                 return;
 
             if (!RoomActive)
@@ -133,8 +133,10 @@ namespace RealmShards.Enemies
         {
             Enter(EnemyFsmState.Dead);
             Motor.LockMovement(true);
+            Motor.SetDesiredVelocity(Vector2.zero);
             Animator.SetAttacking(false);
             OnEnemyDied();
+            EnemyDeathFade.Begin(this, 0.6f);
         }
 
         protected virtual void OnEnemyDied() { }
