@@ -3,7 +3,8 @@
 --- !u!78 &1
 TagManager:
   serializedVersion: 2
-  tags: []
+  tags:
+  - Player
   layers:
   - Default
   - TransparentFX
@@ -11,17 +12,17 @@ TagManager:
   - 
   - Water
   - UI
-  - 
-  - 
-  - 
-  - 
-  - 
-  - 
-  - 
-  - 
-  - 
-  - 
-  - 
+  - Player
+  - Enemy
+  - PlayerProjectile
+  - EnemyProjectile
+  - PlayerHitbox
+  - EnemyHitbox
+  - Pickup
+  - Environment
+  - Trigger
+  - RoomBoundary
+  - Projectile
   - 
   - 
   - 
@@ -40,4 +41,31 @@ TagManager:
   m_SortingLayers:
   - name: Default
     uniqueID: 0
+    locked: 0
+  - name: Ground
+    uniqueID: 1284739201
+    locked: 0
+  - name: FloorDecoration
+    uniqueID: 2847591032
+    locked: 0
+  - name: EnvironmentBack
+    uniqueID: 1938475620
+    locked: 0
+  - name: SkillEffectsBehind
+    uniqueID: 3102948571
+    locked: 0
+  - name: Characters
+    uniqueID: 947182653
+    locked: 0
+  - name: SkillEffectsFront
+    uniqueID: 2674019384
+    locked: 0
+  - name: EnvironmentFront
+    uniqueID: 1583920471
+    locked: 0
+  - name: WorldUI
+    uniqueID: 3928475610
+    locked: 0
+  - name: ScreenUI
+    uniqueID: 2049183756
     locked: 0
