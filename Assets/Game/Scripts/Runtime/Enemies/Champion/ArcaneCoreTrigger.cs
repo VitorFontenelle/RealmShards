@@ -1,14 +1,17 @@
+using RealmShards.Core;
+using RealmShards.Save;
+using RealmShards.UI;
 using UnityEngine;
 
 namespace RealmShards.Enemies
 {
     /// <summary>
-    /// Stub trigger revealed after champion defeat. Interact / walk-over logs reward for now.
+    /// Revealed after champion defeat — opens Arcane Core unlock spend UI.
     /// </summary>
     [RequireComponent(typeof(CircleCollider2D))]
     public sealed class ArcaneCoreTrigger : MonoBehaviour
     {
-        [SerializeField] private string coreId = "arcane-core-stub";
+        [SerializeField] private string coreId = "arcane-core";
         [SerializeField] private bool consumeOnTouch = true;
 
         private bool _used;
@@ -17,11 +20,11 @@ namespace RealmShards.Enemies
         {
             var go = new GameObject("ArcaneCore");
             go.transform.position = position;
-            go.layer = Core.GameLayers.Trigger;
+            go.layer = GameLayers.Trigger;
 
             var sr = go.AddComponent<SpriteRenderer>();
             sr.sprite = EnemySpriteLoader.CreatePlaceholder(new Color(0.35f, 0.85f, 1f), 48);
-            sr.sortingLayerName = Core.SortingLayers.WorldUI;
+            sr.sortingLayerName = SortingLayers.WorldUI;
             sr.sortingOrder = 15;
             sr.color = new Color(0.4f, 0.9f, 1f, 0.95f);
 
@@ -45,9 +48,53 @@ namespace RealmShards.Enemies
                 return;
 
             _used = true;
-            Debug.Log($"[RealmShards] Arcane Core '{coreId}' activated (stub reward).");
+            OpenUnlockUi();
             if (consumeOnTouch)
                 Destroy(gameObject, 0.2f);
+        }
+
+        private void OpenUnlockUi()
+        {
+            var cityId = GameContext.Instance?.RunSession?.CityId ?? ContentIdDefaults.CityStarter;
+            string[] abilities;
+            int[] costs;
+
+            switch (cityId)
+            {
+                case ContentIdDefaults.CityGildedWard:
+                    abilities = new[] { ContentIdDefaults.AbilityGildedFlare, ContentIdDefaults.AbilityGildedSmite };
+                    costs = new[] { 18, 22 };
+                    break;
+                case ContentIdDefaults.CityAshenQuay:
+                    abilities = new[] { ContentIdDefaults.AbilityAshenDrift, ContentIdDefaults.AbilityAshenCinder };
+                    costs = new[] { 16, 18 };
+                    break;
+                case ContentIdDefaults.CityCapital:
+                    abilities = new[] { ContentIdDefaults.AbilityContinuumSlip, ContentIdDefaults.AbilityContinuumEcho };
+                    costs = new[] { 25, 28 };
+                    break;
+                default:
+                    abilities = new[]
+                    {
+                        ContentIdDefaults.AbilityArcanePulse,
+                        ContentIdDefaults.AbilityBlinkStep,
+                        ContentIdDefaults.AbilityTideglassRipple,
+                        ContentIdDefaults.AbilityTideglassHarpoon
+                    };
+                    costs = new[] { 15, 20, 16, 18 };
+                    break;
+            }
+
+            var session = GameContext.Instance?.RunSession;
+            if (session != null)
+                session.AwaitingArcaneCore = true;
+
+            ArcaneCoreUnlockScreen.Show(abilities, costs, () =>
+            {
+                if (session != null)
+                    session.AwaitingArcaneCore = false;
+                Debug.Log($"[RealmShards] Arcane Core '{coreId}' spend UI closed.");
+            });
         }
     }
 

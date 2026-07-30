@@ -3,8 +3,7 @@ using UnityEngine;
 namespace RealmShards.Runs
 {
     /// <summary>
-    /// Stub route definition for decade / city routing.
-    /// TODO (world agent): room sequence, encounter tables, decade modifiers.
+    /// Stub route definition for decade / city routing metadata.
     /// </summary>
     [CreateAssetMenu(fileName = "RouteDefinition", menuName = "RealmShards/Runs/Route Definition")]
     public sealed class RouteDefinition : ScriptableObject

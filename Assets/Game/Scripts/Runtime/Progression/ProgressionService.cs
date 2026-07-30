@@ -65,19 +65,64 @@ namespace RealmShards.Progression
         public void UnlockAbility(string abilityId, bool saveImmediately = true)
         {
             if (string.IsNullOrEmpty(abilityId))
-            {
                 return;
-            }
 
             var list = _save.Current.meta.unlockedAbilityIds;
             if (!list.Contains(abilityId))
             {
                 list.Add(abilityId);
                 if (saveImmediately)
-                {
                     _save.Save();
-                }
             }
+        }
+
+        /// <summary>
+        /// Spend Arcane Vestiges to permanently unlock an ability. No duplicate spend.
+        /// </summary>
+        public bool TryPurchaseAbilityUnlock(string abilityId, int cost, out string failReason)
+        {
+            failReason = null;
+            if (string.IsNullOrEmpty(abilityId))
+            {
+                failReason = "Invalid ability.";
+                return false;
+            }
+
+            if (IsAbilityUnlocked(abilityId))
+            {
+                failReason = "Already unlocked.";
+                return false;
+            }
+
+            if (cost < 0)
+            {
+                failReason = "Invalid cost.";
+                return false;
+            }
+
+            if (ArcaneVestiges < cost)
+            {
+                failReason = "Not enough Arcane Vestiges.";
+                return false;
+            }
+
+            var meta = _save.Current.meta;
+            meta.arcaneVestiges -= cost;
+            if (!meta.unlockedAbilityIds.Contains(abilityId))
+                meta.unlockedAbilityIds.Add(abilityId);
+            _save.Save();
+            return true;
+        }
+
+        public void SetEquippedAbility(int slot, string abilityId, bool saveImmediately = true)
+        {
+            var list = _save.Current.meta.equippedAbilityIds;
+            while (list.Count < 4)
+                list.Add(string.Empty);
+            slot = Mathf.Clamp(slot, 0, 3);
+            list[slot] = abilityId ?? string.Empty;
+            if (saveImmediately)
+                _save.Save();
         }
     }
 }

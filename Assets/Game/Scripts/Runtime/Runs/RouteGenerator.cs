@@ -19,9 +19,7 @@ namespace RealmShards.Runs
         public int depth;
     }
 
-    /// <summary>
-    /// Minimal linear route generator for Stage 2 (foundation may replace).
-    /// </summary>
+    /// <summary>Within-city encounter route (rooms before champion).</summary>
     public static class RouteGenerator
     {
         public static List<RouteNode> GenerateSampleCityRoute(int encounterCount = 3, bool includeElite = true)
@@ -61,16 +59,47 @@ namespace RealmShards.Runs
     [CreateAssetMenu(menuName = "RealmShards/Cities/City Definition", fileName = "CityDefinition")]
     public sealed class CityDefinition : ScriptableObject
     {
-        [SerializeField] private string cityId = "sample-city";
+        [SerializeField] private string cityId = "city.starter";
         [SerializeField] private string displayName = "Sample City";
         [SerializeField] private string sceneName = "CityRun";
-        [SerializeField] private int encounterCount = 3;
-        [SerializeField] private bool includeElite = true;
+        [SerializeField] private int encounterCount = 2;
+        [SerializeField] private bool includeElite;
+        [SerializeField] private bool isCapital;
+        [SerializeField] private string magicSchoolId = "school.neutral";
+        [SerializeField] private string[] unlockableAbilityIds =
+        {
+            Save.ContentIdDefaults.AbilityArcanePulse,
+            Save.ContentIdDefaults.AbilityBlinkStep
+        };
+        [SerializeField] private int[] unlockCosts = { 15, 20 };
 
         public string CityId => cityId;
         public string DisplayName => displayName;
         public string SceneName => sceneName;
+        public bool IsCapital => isCapital;
+        public string MagicSchoolId => magicSchoolId;
+        public IReadOnlyList<string> UnlockableAbilityIds => unlockableAbilityIds;
+        public IReadOnlyList<int> UnlockCostsList => unlockCosts;
 
         public List<RouteNode> BuildRoute() => RouteGenerator.GenerateSampleCityRoute(encounterCount, includeElite);
+
+        public int GetUnlockCost(int index)
+        {
+            if (unlockCosts == null || index < 0 || index >= unlockCosts.Length)
+                return 15;
+            return unlockCosts[index];
+        }
+
+#if UNITY_EDITOR
+        public void EditorConfigure(string id, string name, bool capital, int rooms, string schoolId)
+        {
+            cityId = id;
+            displayName = name;
+            isCapital = capital;
+            encounterCount = rooms;
+            includeElite = !capital && rooms >= 2;
+            magicSchoolId = schoolId;
+        }
+#endif
     }
 }

@@ -121,9 +121,7 @@ namespace RealmShards.Save
         private static SaveData Migrate(SaveData data)
         {
             if (data.version < 1)
-            {
                 data.version = 1;
-            }
 
             data.meta ??= new MetaProgressionData();
             data.settings ??= new SettingsData();
@@ -132,17 +130,27 @@ namespace RealmShards.Save
             data.meta.unlockedCityIds ??= new System.Collections.Generic.List<string>();
 
             if (data.meta.unlockedAbilityIds.Count == 0)
-            {
                 data.meta.unlockedAbilityIds.Add(ContentIdDefaults.AbilityBasicBolt);
-            }
 
             while (data.meta.equippedAbilityIds.Count < 4)
-            {
                 data.meta.equippedAbilityIds.Add(string.Empty);
-            }
+
+            EnsureCity(data.meta.unlockedCityIds, ContentIdDefaults.CityStarter);
+            EnsureCity(data.meta.unlockedCityIds, ContentIdDefaults.CityGildedWard);
+            EnsureCity(data.meta.unlockedCityIds, ContentIdDefaults.CityAshenQuay);
+
+            if (data.meta.preferredPreCapitalNodes < 1)
+                data.meta.preferredPreCapitalNodes = 2;
 
             data.meta.decade = data.meta.year / 10;
+            data.version = SaveData.CurrentVersion;
             return data;
+        }
+
+        private static void EnsureCity(System.Collections.Generic.List<string> list, string id)
+        {
+            if (!list.Contains(id))
+                list.Add(id);
         }
 
         private static SaveData CreateDefault()

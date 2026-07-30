@@ -1,4 +1,6 @@
 using System;
+using System.Collections.Generic;
+using UnityEngine;
 
 namespace RealmShards.Runs
 {
@@ -45,7 +47,7 @@ namespace RealmShards.Runs
     }
 
     /// <summary>
-    /// Session state for the active city run. Owned by meta; filled by world/combat.
+    /// Session state for the active world run. Owned by meta; filled by world/combat.
     /// </summary>
     public sealed class RunSession
     {
@@ -54,17 +56,64 @@ namespace RealmShards.Runs
         public string RouteId { get; private set; }
         public int Seed { get; private set; }
         public int LocalPlayerCount { get; private set; }
+        public int WorldNodeIndex { get; private set; }
+        public int RoomIndex { get; set; }
+        public bool IsCapitalNode { get; private set; }
+        public bool AwaitingArcaneCore { get; set; }
+        public WorldRoutePlan RoutePlan { get; private set; }
+        public IReadOnlyList<string> LoadoutAbilityIds { get; private set; }
         public RunOutcome LastOutcome { get; private set; }
 
-        public void Begin(string cityId, string routeId, int seed, int localPlayerCount)
+        public void Begin(
+            string cityId,
+            string routeId,
+            int seed,
+            int localPlayerCount,
+            WorldRoutePlan plan = null,
+            int worldNodeIndex = 0,
+            IList<string> loadout = null)
         {
             IsActive = true;
             CityId = cityId;
             RouteId = routeId;
             Seed = seed;
             LocalPlayerCount = Math.Clamp(localPlayerCount, 1, 4);
+            WorldNodeIndex = Mathf.Max(0, worldNodeIndex);
+            RoomIndex = 0;
+            RoutePlan = plan;
+            IsCapitalNode = plan?.Get(WorldNodeIndex)?.kind == WorldNodeKind.Capital
+                            || string.Equals(cityId, Save.ContentIdDefaults.CityCapital, StringComparison.Ordinal);
+            AwaitingArcaneCore = false;
+            LoadoutAbilityIds = loadout != null
+                ? new List<string>(loadout)
+                : new List<string>();
             LastOutcome = null;
         }
+
+        public void AdvanceToNode(int nodeIndex)
+        {
+            if (RoutePlan == null)
+                return;
+            WorldNodeIndex = Mathf.Clamp(nodeIndex, 0, RoutePlan.NodeCount - 1);
+            var node = RoutePlan.Get(WorldNodeIndex);
+            if (node != null)
+            {
+                CityId = node.cityId;
+                IsCapitalNode = node.kind == WorldNodeKind.Capital;
+            }
+
+            RoomIndex = 0;
+            AwaitingArcaneCore = false;
+        }
+
+        public void MarkCurrentNodeCompleted()
+        {
+            var node = RoutePlan?.Get(WorldNodeIndex);
+            if (node != null)
+                node.completed = true;
+        }
+
+        public bool HasNextNode => RoutePlan != null && WorldNodeIndex + 1 < RoutePlan.NodeCount;
 
         public void Complete(RunOutcome outcome)
         {
@@ -78,17 +127,22 @@ namespace RealmShards.Runs
             CityId = null;
             RouteId = null;
             Seed = 0;
+            WorldNodeIndex = 0;
+            RoomIndex = 0;
+            IsCapitalNode = false;
+            AwaitingArcaneCore = false;
+            RoutePlan = null;
+            LoadoutAbilityIds = null;
             LastOutcome = null;
         }
     }
 
-    /// <summary>
-    /// World/combat agents implement or call into this to end a run.
-    /// </summary>
     public interface IRunHost
     {
         RunSession Session { get; }
         void BeginRun(string cityId, string routeId, int localPlayerCount);
+        void BeginWorldRun(int preCapitalCount, int localPlayerCount, int? seed = null);
+        void AdvanceToNextCity();
         void EndRun(RunOutcome outcome);
     }
 }
