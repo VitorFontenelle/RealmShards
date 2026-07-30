@@ -277,6 +277,11 @@ MonoBehaviour:
   clampBounds: {fileID: 0}
   fallbackTarget: {fileID: 0}
   autoFindPlayers: 1
+  enableCatchUp: 1
+  catchUpSeparation: 14
+  catchUpSoftTeleportDistance: 22
+  catchUpPullSpeed: 18
+  locateFocusBlend: 0.65
 --- !u!1 &619394800
 GameObject:
   m_ObjectHideFlags: 0

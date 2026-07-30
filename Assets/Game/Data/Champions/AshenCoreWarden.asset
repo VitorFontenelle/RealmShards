@@ -10,12 +10,12 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: f54925bf63144ef43ac54b505b323f90, type: 3}
-  m_Name: ArcaneCoreChampion
-  m_EditorClassIdentifier: Assembly-CSharp::RealmShards.Enemies.ChampionDefinition
-  championId: champion.arcane_core
-  displayName: Arcane Core Champion
-  enemyDefinition: {fileID: 11400000, guid: 2dfac4bbc85938447b380ae1150e61a6, type: 2}
+  m_Name: AshenCoreWarden
+  m_EditorClassIdentifier: RealmShards.Runtime::RealmShards.Enemies.ChampionDefinition
+  championId: champion.ashen_warden
+  displayName: Ashen Core Warden
+  enemyDefinition: {fileID: 11400000, guid: a8af0b5fbf963ed46af85a0982f33eca, type: 2}
   opensArcaneCore: 1
-  minYear: 0
-  maxYear: 9
-  weight: 1
+  minYear: 20
+  maxYear: 9999
+  weight: 1.4

@@ -20,3 +20,4 @@ MonoBehaviour:
   abilityIds:
   - ability.gilded_flare
   - ability.gilded_smite
+  - ability.gilded_bastion

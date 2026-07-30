@@ -80,7 +80,7 @@ MonoBehaviour:
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 31d18cd287857e74d8465722dd7a7e1d, type: 3}
   m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::RealmShards.Hurtbox
+  m_EditorClassIdentifier: RealmShards.Runtime::RealmShards.Hurtbox
   health: {fileID: 0}
   factionMember: {fileID: 0}
 --- !u!1 &2349029765108582642
@@ -414,7 +414,7 @@ MonoBehaviour:
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: da38cf1c266fd81468625c9eb7305be0, type: 3}
   m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::RealmShards.DirectionalSpriteAnimator
+  m_EditorClassIdentifier: RealmShards.Runtime::RealmShards.DirectionalSpriteAnimator
   spriteRenderer: {fileID: 7308634801739033971}
   animationSet: {fileID: 11400000, guid: ed575289a498e1f41bb8ced2cb6af9e1, type: 2}
   facing: 0
@@ -544,7 +544,7 @@ MonoBehaviour:
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: da656b0ecffb80e4db07a7380b47b795, type: 3}
   m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::RealmShards.FactionMember
+  m_EditorClassIdentifier: RealmShards.Runtime::RealmShards.FactionMember
   faction: 1
   teamId: 0
   friendlyFire: 0
@@ -559,7 +559,7 @@ MonoBehaviour:
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: ae479423cd287424cb2c6c32ac3f6176, type: 3}
   m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::RealmShards.Health
+  m_EditorClassIdentifier: RealmShards.Runtime::RealmShards.Health
   maxHealth: 100
   iFrameDuration: 0.35
   factionMember: {fileID: 0}
@@ -576,7 +576,7 @@ MonoBehaviour:
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: b5e4831d551a4064dbe10e3835ef51f6, type: 3}
   m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::RealmShards.PlayerMotor
+  m_EditorClassIdentifier: RealmShards.Runtime::RealmShards.PlayerMotor
   moveSpeed: 4.5
   body: {fileID: 0}
 --- !u!114 &1984075575958710791
@@ -590,7 +590,7 @@ MonoBehaviour:
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 6911ac0473b893a4eab609faa172055d, type: 3}
   m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::RealmShards.PlayerAim
+  m_EditorClassIdentifier: RealmShards.Runtime::RealmShards.PlayerAim
   worldCamera: {fileID: 0}
   preferAimOverMove: 1
 --- !u!114 &6285463373312111343
@@ -604,7 +604,7 @@ MonoBehaviour:
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 7df741e6309aa9640a4693032960d785, type: 3}
   m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::RealmShards.PlayerInteractor
+  m_EditorClassIdentifier: RealmShards.Runtime::RealmShards.PlayerInteractor
   radius: 1.1
   inventory: {fileID: 0}
   pickupMask:
@@ -621,7 +621,7 @@ MonoBehaviour:
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: f5eda286162eed24283b335677086df8, type: 3}
   m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::RealmShards.PlayerItemModifiers
+  m_EditorClassIdentifier: RealmShards.Runtime::RealmShards.PlayerItemModifiers
 --- !u!114 &1012581992908343953
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -633,7 +633,7 @@ MonoBehaviour:
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 48574cc9ed5c8604bbcc83e20255c11f, type: 3}
   m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::RealmShards.PlayerInventory
+  m_EditorClassIdentifier: RealmShards.Runtime::RealmShards.PlayerInventory
   capacity: 6
   health: {fileID: 5039402051861597275}
   motor: {fileID: 1127612849895866173}
@@ -651,7 +651,7 @@ MonoBehaviour:
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 0179fabe2a1cbba47aa827a2252c1d02, type: 3}
   m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::RealmShards.ItemMagnet
+  m_EditorClassIdentifier: RealmShards.Runtime::RealmShards.ItemMagnet
   modifiers: {fileID: 0}
   pullSpeed: 8
   autoPickupRadius: 0.55
@@ -667,7 +667,7 @@ MonoBehaviour:
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 63c6f25fc1060c7429dfc84fc52a3593, type: 3}
   m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::RealmShards.AbilityCaster
+  m_EditorClassIdentifier: RealmShards.Runtime::RealmShards.AbilityCaster
   basicAbility: {fileID: 11400000, guid: 35169d268f447964bb1fff416784a515, type: 2}
   ability1: {fileID: 11400000, guid: 385821925d44a064a825b5d3a7b70a2e, type: 2}
   ability2: {fileID: 11400000, guid: 35169d268f447964bb1fff416784a515, type: 2}
@@ -694,7 +694,7 @@ MonoBehaviour:
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 2673caf718e24504a853c62a11fb6772, type: 3}
   m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::RealmShards.PlayerIdentity
+  m_EditorClassIdentifier: RealmShards.Runtime::RealmShards.PlayerIdentity
   playerIndex: 0
   playerColor: {r: 0.72, g: 0.45, b: 0.95, a: 1}
   bodyRenderer: {fileID: 7308634801739033971}
@@ -714,7 +714,7 @@ MonoBehaviour:
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 870256ef3a74efa4b832ffca1ddd44e8, type: 3}
   m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::RealmShards.PlayerController
+  m_EditorClassIdentifier: RealmShards.Runtime::RealmShards.PlayerController
   motor: {fileID: 0}
   aim: {fileID: 0}
   animator: {fileID: 0}
@@ -734,7 +734,7 @@ MonoBehaviour:
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 9685cd5c376a556409e4b0d4590f34de, type: 3}
   m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::RealmShards.PlayerInputBridge
+  m_EditorClassIdentifier: RealmShards.Runtime::RealmShards.PlayerInputBridge
   motor: {fileID: 0}
   aim: {fileID: 0}
   abilityCaster: {fileID: 0}
@@ -752,7 +752,7 @@ MonoBehaviour:
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: c0df138dee82a1b448407e0aa6fc9f2f, type: 3}
   m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::RealmShards.Combat.PlayerTargetProxy
+  m_EditorClassIdentifier: RealmShards.Runtime::RealmShards.Combat.PlayerTargetProxy
   health: {fileID: 0}
 --- !u!114 &6935823559110272458
 MonoBehaviour:

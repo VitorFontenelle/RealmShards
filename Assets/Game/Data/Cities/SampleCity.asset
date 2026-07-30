@@ -11,7 +11,7 @@ MonoBehaviour:
   m_EditorHideFlags: 0
   m_Script: {fileID: 0}
   m_Name: SampleCity
-  m_EditorClassIdentifier: Assembly-CSharp:RealmShards.Runs:CityDefinition
+  m_EditorClassIdentifier: RealmShards.Runtime:RealmShards.Runs:CityDefinition
   cityId: city.starter
   displayName: Sample City
   sceneName: CityRun

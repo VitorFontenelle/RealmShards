@@ -34,6 +34,7 @@ MonoBehaviour:
   dashDistance: 3.25
   dashDuration: 0.12
   dashInvulnerable: 1
+  applyStatusesToSelf: 0
   statusEffects:
   - type: 1
     duration: 3

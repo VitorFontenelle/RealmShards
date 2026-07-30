@@ -141,7 +141,7 @@ MonoBehaviour:
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 805e8aaaa3ac2bf44a804c28d3990a93, type: 3}
   m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::RealmShards.ItemPickup
+  m_EditorClassIdentifier: RealmShards.Runtime::RealmShards.ItemPickup
   item: {fileID: 0}
   spriteRenderer: {fileID: 0}
   bobAmplitude: 0.08

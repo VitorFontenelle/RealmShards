@@ -10,22 +10,22 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: c77d8415800ef68439ef0085dfa53fa9, type: 3}
-  m_Name: ContinuumEcho
-  m_EditorClassIdentifier: Assembly-CSharp::RealmShards.AbilityDefinition
-  contentId: ability.continuum_echo
-  displayName: Continuum Echo
-  kind: 0
+  m_Name: GildedBastion
+  m_EditorClassIdentifier: RealmShards.Runtime::RealmShards.AbilityDefinition
+  contentId: ability.gilded_bastion
+  displayName: Gilded Bastion
+  kind: 1
   icon: {fileID: 0}
-  unlockCost: 28
-  schoolId: school.continuum
-  element: 3
-  cooldown: 0.55
+  unlockCost: 24
+  schoolId: school.gilded_ward
+  element: 6
+  cooldown: 1.1
   windup: 0.05
   activeDuration: 0.1
   recovery: 0.15
   castLockMovement: 0.1
-  damage: 11
-  knockback: 2
+  damage: 8
+  knockback: 1
   range: 8
   projectileSpeed: 12
   hitboxRadius: 0.85
@@ -37,8 +37,8 @@ MonoBehaviour:
   applyStatusesToSelf: 1
   statusEffects:
   - type: 3
-    duration: 4
-    magnitude: 25
+    duration: 3
+    magnitude: 20
     tickInterval: 0
   projectilePrefab: {fileID: 4202646356305797159, guid: fc3614e5a6c567243a2c12cf7624d6a7, type: 3}
   hitboxPrefab: {fileID: 4752176303087100548, guid: 35f46060f3651f64283a4abc4bbe23db, type: 3}

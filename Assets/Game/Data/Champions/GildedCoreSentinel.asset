@@ -10,12 +10,12 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: f54925bf63144ef43ac54b505b323f90, type: 3}
-  m_Name: ArcaneCoreChampion
-  m_EditorClassIdentifier: Assembly-CSharp::RealmShards.Enemies.ChampionDefinition
-  championId: champion.arcane_core
-  displayName: Arcane Core Champion
-  enemyDefinition: {fileID: 11400000, guid: 2dfac4bbc85938447b380ae1150e61a6, type: 2}
+  m_Name: GildedCoreSentinel
+  m_EditorClassIdentifier: RealmShards.Runtime::RealmShards.Enemies.ChampionDefinition
+  championId: champion.gilded_sentinel
+  displayName: Gilded Core Sentinel
+  enemyDefinition: {fileID: 11400000, guid: c2106781d3d60b54d965e1a7e0730451, type: 2}
   opensArcaneCore: 1
-  minYear: 0
-  maxYear: 9
-  weight: 1
+  minYear: 10
+  maxYear: 19
+  weight: 1.2

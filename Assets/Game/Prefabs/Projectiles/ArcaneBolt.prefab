@@ -169,7 +169,7 @@ MonoBehaviour:
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 1a9406132d0ed11468bf992d095c2fa8, type: 3}
   m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::RealmShards.Projectile
+  m_EditorClassIdentifier: RealmShards.Runtime::RealmShards.Projectile
   damage: 10
   knockback: 2.5
   speed: 12

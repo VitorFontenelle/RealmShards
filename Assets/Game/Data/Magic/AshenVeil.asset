@@ -20,3 +20,4 @@ MonoBehaviour:
   abilityIds:
   - ability.ashen_drift
   - ability.ashen_cinder
+  - ability.ashen_howl
