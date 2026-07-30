@@ -103,6 +103,7 @@ namespace RealmShards.Core
 
         private void HandleScene(Scene scene)
         {
+            Combat.HitStop.EnsureRunningTimeScale();
             switch (scene.name)
             {
                 case SceneNames.Bootstrap:

@@ -30,7 +30,7 @@ namespace RealmShards.UI
         private void Build(string[] abilityIds, int[] costs)
         {
             _open = true;
-            Time.timeScale = 0f;
+            Combat.HitStop.SetMenuPaused(true);
 
             UiFactory.AddPanel(transform, "Bg", new Color(0.05f, 0.06f, 0.1f, 0.92f),
                 Vector2.zero, Vector2.one, Vector2.zero, Vector2.zero);
@@ -103,7 +103,7 @@ namespace RealmShards.UI
         {
             if (!_open) return;
             _open = false;
-            Time.timeScale = 1f;
+            Combat.HitStop.EnsureRunningTimeScale();
             var cb = _onClosed;
             Destroy(gameObject);
             cb?.Invoke();
