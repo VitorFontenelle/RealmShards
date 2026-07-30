@@ -80,7 +80,7 @@ SpriteRenderer:
   m_AutoUVMaxAngle: 89
   m_LightmapParameters: {fileID: 0}
   m_GlobalIlluminationMeshLod: 0
-  m_SortingLayerID: 2674019384
+  m_SortingLayerID: -1620947912
   m_SortingLayer: 6
   m_SortingOrder: 20
   m_MaskInteraction: 0
@@ -173,6 +173,7 @@ MonoBehaviour:
   damage: 10
   knockback: 2.5
   speed: 12
-  lifetime: 2.5
+  lifetime: 12
   pierce: 0
   spriteRenderer: {fileID: 0}
+  offscreenPadding: 0.12
