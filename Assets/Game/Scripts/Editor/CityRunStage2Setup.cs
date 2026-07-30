@@ -101,10 +101,29 @@ namespace RealmShards.EditorTools
             EditorUtility.SetDirty(champion);
 
             var champDef = LoadOrCreate<ChampionDefinition>("Assets/Game/Data/Champions/ArcaneCoreChampion.asset");
-            var champSo = new SerializedObject(champDef);
-            champSo.FindProperty("enemyDefinition").objectReferenceValue = champion;
-            champSo.ApplyModifiedPropertiesWithoutUndo();
+            champDef.ConfigureRuntime("champion.arcane_core", "Arcane Core Champion", champion, true, 0, 9, 1f);
             EditorUtility.SetDirty(champDef);
+
+            var gildedEnemy = LoadOrCreate<EnemyDefinition>("Assets/Game/Data/Enemies/GildedCoreSentinel.asset");
+            gildedEnemy.ApplyRuntimeDefaults("Gilded Core Sentinel", EnemyArchetype.Champion, 185f, 2.05f, EnemyFactory.KnightSheet, new Color(1f, 0.82f, 0.35f));
+            gildedEnemy.ConfigureCombat(0, 6, 20, 6, 1.55f, 0f, 16f, 0.95f, 0.5f, 1.15f);
+            EditorUtility.SetDirty(gildedEnemy);
+            var gildedChamp = LoadOrCreate<ChampionDefinition>("Assets/Game/Data/Champions/GildedCoreSentinel.asset");
+            gildedChamp.ConfigureRuntime("champion.gilded_sentinel", "Gilded Core Sentinel", gildedEnemy, true, 10, 19, 1.2f);
+            EditorUtility.SetDirty(gildedChamp);
+
+            var ashenEnemy = LoadOrCreate<EnemyDefinition>("Assets/Game/Data/Enemies/AshenCoreWarden.asset");
+            ashenEnemy.ApplyRuntimeDefaults("Ashen Core Warden", EnemyArchetype.Champion, 210f, 2.1f, EnemyFactory.KnightSheet, new Color(0.85f, 0.35f, 0.25f));
+            ashenEnemy.ConfigureCombat(0, 6, 20, 6, 1.6f, 0f, 18f, 0.9f, 0.48f, 1.2f);
+            EditorUtility.SetDirty(ashenEnemy);
+            var ashenChamp = LoadOrCreate<ChampionDefinition>("Assets/Game/Data/Champions/AshenCoreWarden.asset");
+            ashenChamp.ConfigureRuntime("champion.ashen_warden", "Ashen Core Warden", ashenEnemy, true, 20, 9999, 1.4f);
+            EditorUtility.SetDirty(ashenChamp);
+
+            ChampionSelector.ClearRuntimePool();
+            ChampionSelector.RegisterRuntime(champDef);
+            ChampionSelector.RegisterRuntime(gildedChamp);
+            ChampionSelector.RegisterRuntime(ashenChamp);
 
             var encounter = LoadOrCreate<EncounterDefinition>("Assets/Game/Data/Encounters/CityRunSample.asset");
             encounter.SetRuntime(
