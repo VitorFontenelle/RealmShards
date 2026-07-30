@@ -18,10 +18,18 @@ Unity Editor drives everything (compile, tests, build, run).
 ### Licensing (REQUIRED, not automatic)
 
 The Editor will not compile, test, build, or run without an activated license — a bare launch
-exits with code `198` and logs `No valid Unity Editor license found`. Activation needs a Unity
-account (a free Personal account is enough). Provide ONE of these via secrets:
+exits with code `198` and logs `No valid Unity Editor license found`. A free Unity Personal
+license is already activated and persists in the VM snapshot.
 
-- `UNITY_EMAIL` + `UNITY_PASSWORD` (+ `UNITY_SERIAL` only for Plus/Pro seats), or
+**Revalidate at session start if needed.** Unity licenses are machine-bound, so on a freshly
+forked VM the license can read as absent. The Unity account credentials are available as the
+secrets **`UNITY_EMAIL`** and **`UNITY_PASSWORD`** (injected as env vars), so if
+`~/realmshards-unity.sh status` (or `--showEntitlements`) shows no `Unity Personal` entitlement,
+simply re-run `~/realmshards-unity.sh activate` (idempotent) before compiling/testing/building.
+
+Credential options (any one):
+
+- `UNITY_EMAIL` + `UNITY_PASSWORD` (+ `UNITY_SERIAL` only for Plus/Pro seats) — already set as secrets, or
 - `UNITY_LICENSE` = full contents of a `.ulf` file from manual activation
   (`https://license.unity3d.com/manual`; a `.alf` request file can be generated with
   `/opt/unity/Editor/Unity -batchmode -nographics -quit -createManualActivationFile`).
@@ -42,10 +50,8 @@ Confirm with `$LC --showEntitlements` (or `~/realmshards-unity.sh status`); it s
 `Unity Personal` entitlement group including `com.unity.editor` / `com.unity.editor.headless`.
 The license is written to `~/.config/unity3d/Unity/licenses/UnityEntitlementLicense.xml`.
 
-Note: an activated license persists in the VM snapshot, but Unity licenses are machine-bound, so
-if a future VM reports a different machine id the persisted license can read as absent. Keep the
-Unity secrets available and simply **re-run activation whenever `status` shows no license** — it
-is idempotent. This is why activation is intentionally left out of the startup update script.
+Activation is intentionally kept out of the startup update script (it is a network/license step
+that would make the always-on startup brittle); revalidate on demand as described above instead.
 
 ### Running things (all via batchmode; only the built player needs a display)
 
