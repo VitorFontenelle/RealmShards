@@ -14,11 +14,20 @@ namespace RealmShards.Save
         private const string BackupSuffix = ".bak";
         private const string TempSuffix = ".tmp";
 
+        private readonly string _fileName;
         private SaveData _current;
+
+        public JsonSaveService() : this(FileName) { }
+
+        /// <summary>Test / alternate profile path under persistentDataPath.</summary>
+        public JsonSaveService(string fileName)
+        {
+            _fileName = string.IsNullOrEmpty(fileName) ? FileName : fileName;
+        }
 
         public SaveData Current => _current ??= CreateDefault();
 
-        public string SaveFilePath => Path.Combine(Application.persistentDataPath, FileName);
+        public string SaveFilePath => Path.Combine(Application.persistentDataPath, _fileName);
 
         public bool HasSaveFile => File.Exists(SaveFilePath);
 

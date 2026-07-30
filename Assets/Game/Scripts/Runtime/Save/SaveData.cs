@@ -111,6 +111,11 @@ namespace RealmShards.Save
         public const string ItemStridefeather = "item.stridefeather";
         public const string ItemLodestone = "item.lodestone_charm";
         public const string ItemChronoweave = "item.chronoweave_sand";
+        public const string ItemIronvine = "item.ironvine_charm";
+        public const string ItemGlassmarrow = "item.glassmarrow_phial";
+
+        public const string AbilityGildedBastion = "ability.gilded_bastion";
+        public const string AbilityAshenHowl = "ability.ashen_howl";
     }
 
     public static class UnlockCosts

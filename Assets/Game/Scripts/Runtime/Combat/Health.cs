@@ -156,9 +156,19 @@ namespace RealmShards
 
             Damaged?.Invoke(this, damage);
 
+            if (incoming >= 1f)
+            {
+                bool heavy = incoming >= 18f;
+                Combat.DamageNumberService.Spawn(transform.position, incoming, heavy);
+                if (heavy)
+                    Combat.HitStop.Request(0.05f);
+                Audio.AudioEventHub.Play(heavy ? "combat.heavy_hit" : "combat.hit", transform.position);
+            }
+
             if (_current <= 0f)
             {
                 _dead = true;
+                Audio.AudioEventHub.Play("enemy.death", transform.position);
                 Died?.Invoke(this);
             }
 

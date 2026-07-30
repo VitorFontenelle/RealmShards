@@ -75,6 +75,8 @@ namespace RealmShards.Progression
                 E(Save.ContentIdDefaults.AbilityTideglassHarpoon, ContentKind.Ability, "Tideglass Harpoon"),
                 E(Save.ContentIdDefaults.AbilityContinuumSlip, ContentKind.Ability, "Continuum Slip"),
                 E(Save.ContentIdDefaults.AbilityContinuumEcho, ContentKind.Ability, "Continuum Echo"),
+                E(Save.ContentIdDefaults.AbilityGildedBastion, ContentKind.Ability, "Gilded Bastion"),
+                E(Save.ContentIdDefaults.AbilityAshenHowl, ContentKind.Ability, "Ashen Howl"),
                 E(Save.ContentIdDefaults.CityStarter, ContentKind.City, "Starter Reach"),
                 E(Save.ContentIdDefaults.CityGildedWard, ContentKind.City, "Gilded Ward"),
                 E(Save.ContentIdDefaults.CityAshenQuay, ContentKind.City, "Ashen Quay"),

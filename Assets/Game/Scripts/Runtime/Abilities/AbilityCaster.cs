@@ -181,6 +181,11 @@ namespace RealmShards
         {
             _lastCastAbility = ability;
             var ctx = BuildContext(aim);
+            Audio.AudioEventHub.Play("ability.cast", transform.position);
+
+            if (ability.ApplyStatusesToSelf)
+                ApplyStatusesToSelf(ability);
+
             switch (ability.Kind)
             {
                 case AbilityKind.Projectile:
@@ -194,6 +199,16 @@ namespace RealmShards
                     StartCoroutine(DashRoutine(ability, ctx));
                     break;
             }
+        }
+
+        private void ApplyStatusesToSelf(AbilityDefinition ability)
+        {
+            if (health == null || ability?.StatusEffects == null) return;
+            var host = health.GetComponent<Magic.StatusEffectHost>();
+            if (host == null)
+                host = health.gameObject.AddComponent<Magic.StatusEffectHost>();
+            for (int i = 0; i < ability.StatusEffects.Length; i++)
+                host.Apply(ability.StatusEffects[i]);
         }
 
         private void ApplyStatusesInRadius(AbilityDefinition ability, AbilityContext ctx)
@@ -217,6 +232,8 @@ namespace RealmShards
         {
             if (victim == null || ability == null || ability.StatusEffects == null)
                 return;
+            if (ability.ApplyStatusesToSelf)
+                return; // Continuum Echo ward etc. — self only
             var host = victim.GetComponent<Magic.StatusEffectHost>();
             if (host == null)
                 host = victim.gameObject.AddComponent<Magic.StatusEffectHost>();

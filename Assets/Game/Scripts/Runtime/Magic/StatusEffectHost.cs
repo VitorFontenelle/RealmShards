@@ -1,4 +1,6 @@
 using System.Collections.Generic;
+using RealmShards.Core;
+using RealmShards.Enemies;
 using UnityEngine;
 
 namespace RealmShards.Magic
@@ -21,11 +23,16 @@ namespace RealmShards.Magic
 
         [SerializeField] private Health health;
         [SerializeField] private PlayerMotor motor;
+        [SerializeField] private SpriteRenderer tintTarget;
+        [SerializeField] private bool showStatusTint = true;
 
         private readonly List<ActiveStatus> _active = new List<ActiveStatus>(8);
-        private float _baseSpeedBonusCaptured;
         private bool _slowApplied;
         private float _slowAmount;
+        private Color _baseColor = Color.white;
+        private bool _capturedBase;
+        private GameObject _wardRing;
+        private SpriteRenderer _wardSr;
 
         public float WardAbsorbRemaining
         {
@@ -39,10 +46,15 @@ namespace RealmShards.Magic
             }
         }
 
+        public bool HasBurn => Find(StatusEffectType.Burn) != null;
+        public bool HasSlow => Find(StatusEffectType.Slow) != null;
+        public bool HasWard => WardAbsorbRemaining > 0.1f;
+
         private void Awake()
         {
             if (health == null) health = GetComponent<Health>();
             if (motor == null) motor = GetComponent<PlayerMotor>();
+            if (tintTarget == null) tintTarget = GetComponent<SpriteRenderer>();
         }
 
         private void OnEnable()
@@ -56,6 +68,7 @@ namespace RealmShards.Magic
             if (health != null)
                 health.Damaged -= OnDamaged;
             ClearSlow();
+            RestoreTint();
         }
 
         private void Update()
@@ -75,6 +88,9 @@ namespace RealmShards.Magic
                     }
                 }
 
+                if (s.Type == StatusEffectType.Ward && s.WardRemaining <= 0.01f)
+                    s.Remaining = 0f;
+
                 if (s.Remaining <= 0f)
                 {
                     if (s.Type == StatusEffectType.Slow)
@@ -82,6 +98,8 @@ namespace RealmShards.Magic
                     _active.RemoveAt(i);
                 }
             }
+
+            RefreshVisuals();
         }
 
         public void Apply(StatusApplication app)
@@ -102,6 +120,8 @@ namespace RealmShards.Magic
                 existing.Magnitude = Mathf.Max(existing.Magnitude, app.magnitude);
                 if (app.type == StatusEffectType.Ward)
                     existing.WardRemaining = Mathf.Max(existing.WardRemaining, app.magnitude);
+                if (app.type == StatusEffectType.Slow)
+                    ApplySlow(existing.Magnitude);
                 return;
             }
 
@@ -131,7 +151,8 @@ namespace RealmShards.Magic
 
         private void OnDamaged(Health h, DamageInfo info)
         {
-            // Ward absorption is handled via AbsorbDamage if wired; soft note for now.
+            // Absorb already applied in Health before Damaged fires.
+            RefreshVisuals();
         }
 
         /// <summary>Consumes ward before HP. Returns remaining damage after absorb.</summary>
@@ -172,10 +193,62 @@ namespace RealmShards.Magic
         {
             var rb = GetComponent<Rigidbody2D>();
             if (rb == null) return;
-            // Radial push away from nearest enemy caster omitted — push outward from self origin noise.
             Vector2 dir = Random.insideUnitCircle.normalized;
             if (dir.sqrMagnitude < 0.01f) dir = Vector2.right;
             rb.AddForce(dir * force, ForceMode2D.Impulse);
+        }
+
+        private void RefreshVisuals()
+        {
+            if (!showStatusTint) return;
+            if (tintTarget != null && !_capturedBase)
+            {
+                _baseColor = tintTarget.color;
+                _capturedBase = true;
+            }
+
+            if (tintTarget != null)
+            {
+                Color c = _baseColor;
+                if (HasBurn) c = Color.Lerp(c, new Color(1f, 0.45f, 0.15f), 0.45f);
+                if (HasSlow) c = Color.Lerp(c, new Color(0.45f, 0.75f, 1f), 0.4f);
+                tintTarget.color = c;
+            }
+
+            EnsureWardRing();
+            if (_wardRing != null)
+            {
+                bool on = HasWard;
+                _wardRing.SetActive(on);
+                if (on && _wardSr != null)
+                {
+                    float a = 0.25f + 0.15f * Mathf.Abs(Mathf.Sin(Time.time * 4f));
+                    _wardSr.color = new Color(0.45f, 0.85f, 1f, a);
+                    float scale = 1.2f + 0.15f * Mathf.Clamp01(WardAbsorbRemaining / 30f);
+                    _wardRing.transform.localScale = Vector3.one * scale;
+                }
+            }
+        }
+
+        private void EnsureWardRing()
+        {
+            if (_wardRing != null) return;
+            _wardRing = new GameObject("WardRing");
+            _wardRing.transform.SetParent(transform);
+            _wardRing.transform.localPosition = Vector3.zero;
+            _wardSr = _wardRing.AddComponent<SpriteRenderer>();
+            _wardSr.sprite = EnemySpriteLoader.CreatePlaceholder(new Color(0.4f, 0.85f, 1f), 48);
+            _wardSr.sortingLayerName = SortingLayers.SkillEffectsBehind;
+            _wardSr.sortingOrder = 2;
+            _wardRing.SetActive(false);
+        }
+
+        private void RestoreTint()
+        {
+            if (tintTarget != null && _capturedBase)
+                tintTarget.color = _baseColor;
+            if (_wardRing != null)
+                _wardRing.SetActive(false);
         }
 
         private ActiveStatus Find(StatusEffectType type)

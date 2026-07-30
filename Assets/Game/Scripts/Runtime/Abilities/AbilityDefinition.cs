@@ -40,6 +40,7 @@ namespace RealmShards
         [SerializeField] private float dashDistance = 3.25f;
         [SerializeField] private float dashDuration = 0.12f;
         [SerializeField] private bool dashInvulnerable = true;
+        [SerializeField] private bool applyStatusesToSelf;
         [SerializeField] private StatusApplication[] statusEffects;
 
         [Header("Prefabs")]
@@ -70,6 +71,7 @@ namespace RealmShards
         public float DashDistance => dashDistance;
         public float DashDuration => dashDuration;
         public bool DashInvulnerable => dashInvulnerable;
+        public bool ApplyStatusesToSelf => applyStatusesToSelf;
         public GameObject ProjectilePrefab => projectilePrefab;
         public GameObject HitboxPrefab => hitboxPrefab;
         public GameObject EffectOverlayPrefab => effectOverlayPrefab;
@@ -109,6 +111,8 @@ namespace RealmShards
         {
             statusEffects = statuses;
         }
+
+        public void EditorSetApplyStatusesToSelf(bool value) => applyStatusesToSelf = value;
 #endif
     }
 }
