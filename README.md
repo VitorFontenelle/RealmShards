@@ -13,6 +13,7 @@ See **[Assets/Game/Docs/PLAY_NOW.md](Assets/Game/Docs/PLAY_NOW.md)** and **[Asse
 ## Docs
 
 - [ARCHITECTURE.md](ARCHITECTURE.md)
+- [CONTENT_PIPELINE.md](CONTENT_PIPELINE.md)
 - [SAVE_SYSTEM.md](SAVE_SYSTEM.md)
 - [KNOWN_LIMITATIONS.md](KNOWN_LIMITATIONS.md)
 - [Assets/Game/Docs/INPUT.md](Assets/Game/Docs/INPUT.md)
