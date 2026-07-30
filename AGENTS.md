@@ -26,19 +26,21 @@ account (a free Personal account is enough). Provide ONE of these via secrets:
   (`https://license.unity3d.com/manual`; a `.alf` request file can be generated with
   `/opt/unity/Editor/Unity -batchmode -nographics -quit -createManualActivationFile`).
 
-Then activate (`~/realmshards-unity.sh activate`, or run the raw command directly):
+Then activate. The **licensing client** path is the reliable one for a free Personal account —
+the plain editor `-username/-password` flow returns "0 entitlements" for a fresh account, whereas
+`--activate-all --include-personal` assigns the Personal seat:
 
 ```bash
-# email/password (Personal or Pro); add `-serial "$UNITY_SERIAL"` only for Plus/Pro
-/opt/unity/Editor/Unity -batchmode -nographics -quit \
-  -username "$UNITY_EMAIL" -password "$UNITY_PASSWORD" -logFile ~/unity-logs/activate.log
+LC=/opt/unity/Editor/Data/Resources/Licensing/Client/Unity.Licensing.Client
+# free Personal (or Pro): assigns any paid seats, else falls back to Personal Edition
+$LC --activate-all --include-personal --username "$UNITY_EMAIL" --password "$UNITY_PASSWORD"
 # or, with a .ulf: echo "$UNITY_LICENSE" > ~/unity.ulf && \
-#   /opt/unity/Editor/Unity -batchmode -nographics -quit -manualLicenseFile ~/unity.ulf -logFile ~/unity-logs/activate.log
+#   /opt/unity/Editor/Unity -batchmode -nographics -quit -manualLicenseFile ~/unity.ulf
 ```
 
-Confirm with `~/realmshards-unity.sh status` (i.e.
-`/opt/unity/Editor/Data/Resources/Licensing/Client/Unity.Licensing.Client --showEntitlements`);
-it should list a Personal/Pro entitlement.
+Confirm with `$LC --showEntitlements` (or `~/realmshards-unity.sh status`); it should list a
+`Unity Personal` entitlement group including `com.unity.editor` / `com.unity.editor.headless`.
+The license is written to `~/.config/unity3d/Unity/licenses/UnityEntitlementLicense.xml`.
 
 Note: an activated license persists in the VM snapshot, but Unity licenses are machine-bound, so
 if a future VM reports a different machine id the persisted license can read as absent. Keep the
@@ -61,12 +63,32 @@ $U -batchmode -nographics -runTests -projectPath $P \
 ```
 
 - `-batchmode -nographics` does NOT need Xvfb — it reaches the license/compile stage on its
-  own. Only launching an actual **built standalone player** needs a display; run it under
-  `xvfb-run -s "-screen 0 1280x800x24"` with Mesa software GL.
+  own. Only launching an actual **built standalone player** needs a display.
 - The repo ships `RealmShards.Editor.RealmShardsFullSetup.BuildWindowsPlayer`
   (`StandaloneWindows64`), which cannot run natively on this Linux VM. To run the game here,
-  build a `StandaloneLinux64` player instead (e.g. a throwaway `-executeMethod` build script);
-  the `build`/`run` helper commands assume such a Linux build under `Builds/Linux/`.
+  build a `StandaloneLinux64` player instead (throwaway `-executeMethod` build script calling
+  `BuildPipeline.BuildPlayer(..., BuildTarget.StandaloneLinux64, BuildOptions.Development)`);
+  output goes to `Builds/Linux/RealmShards.x86_64` (gitignored).
+
+### Running the built player headless (verified working)
+
+```bash
+Xvfb :99 -screen 0 1280x800x24 &
+DISPLAY=:99 LIBGL_ALWAYS_SOFTWARE=1 GALLIUM_DRIVER=llvmpipe \
+  /workspace/Builds/Linux/RealmShards.x86_64 -logFile ~/unity-logs/run.log &
+```
+
+- Software GL (Mesa llvmpipe) gives the player an OpenGL 4.5 context; boot logs
+  `[GameContext] Save loaded ...` then loads Bootstrap → Hub. The player save lives at
+  `~/.config/unity3d/DefaultCompany/RealmShards/save.json`.
+- FMOD/ALSA "failed to initialize the output device" errors are expected (no audio hardware)
+  and harmless.
+- **Input gotcha:** Xvfb has no window manager, so the player window never gains focus and
+  ignores synthetic input by default. Send `xdotool` events to the *specific* window, e.g.
+  `W=$(xdotool search --name RealmShards); xdotool windowactivate $W; xdotool windowfocus $W;
+  xdotool key --window $W space; xdotool mousemove --window $W X Y click 1`. The game uses the
+  new Input System (`InputSystemUIInputModule`); UI buttons only respond once the window is
+  focused this way. Hub flow: Start button → lobby → `Space` joins P1 → Start Run → CityRun.
 
 ### Gotchas
 
