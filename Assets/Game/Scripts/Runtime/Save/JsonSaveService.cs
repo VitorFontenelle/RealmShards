@@ -144,6 +144,23 @@ namespace RealmShards.Save
             while (data.meta.equippedAbilityIds.Count < 4)
                 data.meta.equippedAbilityIds.Add(string.Empty);
 
+            // Strip equipped spells that are no longer unlocked (or were never unlocked).
+            for (int i = 0; i < data.meta.equippedAbilityIds.Count; i++)
+            {
+                string id = data.meta.equippedAbilityIds[i];
+                if (string.IsNullOrEmpty(id))
+                    continue;
+                if (!data.meta.unlockedAbilityIds.Contains(id))
+                    data.meta.equippedAbilityIds[i] = string.Empty;
+            }
+
+            // Ensure at least slot 0 has the basic bolt when empty.
+            if (string.IsNullOrEmpty(data.meta.equippedAbilityIds[0]) &&
+                data.meta.unlockedAbilityIds.Contains(ContentIdDefaults.AbilityBasicBolt))
+            {
+                data.meta.equippedAbilityIds[0] = ContentIdDefaults.AbilityBasicBolt;
+            }
+
             EnsureCity(data.meta.unlockedCityIds, ContentIdDefaults.CityStarter);
             EnsureCity(data.meta.unlockedCityIds, ContentIdDefaults.CityGildedWard);
             EnsureCity(data.meta.unlockedCityIds, ContentIdDefaults.CityAshenQuay);

@@ -1,12 +1,11 @@
 using RealmShards.Core;
-using RealmShards.Input;
-using RealmShards.Save;
 using UnityEngine;
 
 namespace RealmShards
 {
     /// <summary>
     /// Applies hub loadout ability IDs onto a player's AbilityCaster.
+    /// Empty slots clear prefab defaults so unequipped dashes/spells cannot fire.
     /// </summary>
     public static class LoadoutApplier
     {
@@ -21,12 +20,20 @@ namespace RealmShards
                 ids = meta?.equippedAbilityIds;
             }
 
-            if (ids == null) return;
-            for (int i = 0; i < AbilityCaster.SlotCount && i < ids.Count; i++)
+            // Always rewrite every slot so leftover prefab defaults (e.g. Blink) cannot remain.
+            for (int i = 0; i < AbilityCaster.SlotCount; i++)
             {
-                var def = AbilityCatalog.Get(ids[i]);
-                if (def != null)
-                    caster.SetAbility(i, def);
+                string id = ids != null && i < ids.Count ? ids[i] : string.Empty;
+                if (string.IsNullOrEmpty(id))
+                {
+                    caster.SetAbility(i, null);
+                    continue;
+                }
+
+                var def = AbilityCatalog.Get(id);
+                caster.SetAbility(i, def);
+                if (def == null)
+                    Debug.LogWarning($"[Loadout] Ability id '{id}' not found in catalog for slot {i}.");
             }
         }
     }

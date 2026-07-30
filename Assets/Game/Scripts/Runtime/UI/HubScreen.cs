@@ -225,15 +225,29 @@ namespace RealmShards.UI
             var ctx = GameContext.Instance;
             if (ctx == null) return;
             var unlocked = ctx.Save.Current.meta.unlockedAbilityIds;
-            if (unlocked == null || unlocked.Count == 0) return;
+            if (unlocked == null) return;
 
             var equipped = ctx.Save.Current.meta.equippedAbilityIds;
             while (equipped.Count < 4) equipped.Add(string.Empty);
-            string current = equipped[slot];
-            int idx = unlocked.IndexOf(current);
-            idx = (idx + 1) % unlocked.Count;
-            // Allow empty by cycling past last? Keep always filled from unlocked.
-            ctx.Progression.SetEquippedAbility(slot, unlocked[idx], saveImmediately: true);
+
+            // Cycle: (empty) → each unlocked spell → back to empty.
+            var options = new System.Collections.Generic.List<string>(unlocked.Count + 1) { string.Empty };
+            for (int i = 0; i < unlocked.Count; i++)
+            {
+                if (string.IsNullOrEmpty(unlocked[i])) continue;
+                if (!options.Contains(unlocked[i]))
+                    options.Add(unlocked[i]);
+            }
+
+            string current = equipped[slot] ?? string.Empty;
+            // Drop unequipped/locked leftovers so cycling never sticks on Arcane Bolt.
+            if (!string.IsNullOrEmpty(current) && !options.Contains(current))
+                current = string.Empty;
+
+            int idx = options.IndexOf(current);
+            if (idx < 0) idx = 0;
+            idx = (idx + 1) % options.Count;
+            ctx.Progression.SetEquippedAbility(slot, options[idx], saveImmediately: true);
             Refresh();
         }
 
@@ -278,7 +292,7 @@ namespace RealmShards.UI
                 loadout += $"  [{i + 1}] {label}\n";
             }
 
-            loadout += "\nTap Slot buttons to cycle.";
+            loadout += "\nTap Slot buttons to cycle (includes Empty).";
             _loadoutText.text = loadout;
 
             Color[] colors =

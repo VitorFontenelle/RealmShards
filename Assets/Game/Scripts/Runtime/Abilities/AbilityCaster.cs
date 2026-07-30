@@ -116,6 +116,7 @@ namespace RealmShards
                 aimDirection = Vector2.right;
 
             aimDirection.Normalize();
+            animator?.SetFacingFromVector(aimDirection);
             _castRoutine = StartCoroutine(CastRoutine(slot, ability, aimDirection));
             return true;
         }

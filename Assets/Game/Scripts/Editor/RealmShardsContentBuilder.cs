@@ -69,7 +69,7 @@ namespace RealmShards.Editor
 
             RealmShardsItemContentBuilder.BuildAll();
 
-            var player = BuildPlayerPrefab(animSet, material, bolt, pulse, bolt, blink, projectile, hitbox, overlay, pickup);
+            var player = BuildPlayerPrefab(animSet, material, bolt, null, null, null, projectile, hitbox, overlay, pickup);
             BuildDummyPrefab();
 
             AssetDatabase.SaveAssets();

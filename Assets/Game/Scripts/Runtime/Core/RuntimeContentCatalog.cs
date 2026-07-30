@@ -19,6 +19,7 @@ namespace RealmShards.Core
         [SerializeField] private Sprite[] mageRunSprites;
         [SerializeField] private Sprite[] mageCastSprites;
         [SerializeField] private Sprite mageIdleSprite;
+        [SerializeField] private AbilityDefinition[] abilities;
 
         public GameObject PlayerPrefab => playerPrefab;
         public Sprite FloorTile => floorTile;
@@ -28,6 +29,7 @@ namespace RealmShards.Core
         public Sprite[] MageRunSprites => mageRunSprites;
         public Sprite[] MageCastSprites => mageCastSprites;
         public Sprite MageIdleSprite => mageIdleSprite;
+        public AbilityDefinition[] Abilities => abilities;
 
         private static RuntimeContentCatalog _cached;
 
@@ -69,7 +71,8 @@ namespace RealmShards.Core
             Sprite[] archer,
             Sprite[] mageRun,
             Sprite[] mageCast,
-            Sprite mageIdle)
+            Sprite mageIdle,
+            AbilityDefinition[] abilityDefs)
         {
             playerPrefab = player;
             floorTile = floor;
@@ -79,6 +82,7 @@ namespace RealmShards.Core
             mageRunSprites = mageRun ?? System.Array.Empty<Sprite>();
             mageCastSprites = mageCast ?? System.Array.Empty<Sprite>();
             mageIdleSprite = mageIdle;
+            abilities = abilityDefs ?? System.Array.Empty<AbilityDefinition>();
         }
 #endif
     }

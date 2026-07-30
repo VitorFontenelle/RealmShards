@@ -294,3 +294,17 @@ MonoBehaviour:
   - {fileID: -386389996057629335, guid: 3f2a4ac831e7ef3478726066c01f7a8c, type: 3}
   - {fileID: 764891890596544140, guid: 3f2a4ac831e7ef3478726066c01f7a8c, type: 3}
   mageIdleSprite: {fileID: -5071563641634004584, guid: 447f1a42a94706b46b8cc17cf172c34b, type: 3}
+  abilities:
+  - {fileID: 11400000, guid: 385821925d44a064a825b5d3a7b70a2e, type: 2}
+  - {fileID: 11400000, guid: 9a1cdb248640c4648a817853c337d747, type: 2}
+  - {fileID: 11400000, guid: 29ec3e07ccd91f244bf6fa4fc0ba0f2d, type: 2}
+  - {fileID: 11400000, guid: 7b6a80aa6b32449439be0740b46e99f3, type: 2}
+  - {fileID: 11400000, guid: 35169d268f447964bb1fff416784a515, type: 2}
+  - {fileID: 11400000, guid: ba50ed7409be36c47b1e6fa23e122032, type: 2}
+  - {fileID: 11400000, guid: 05734e994da609e4da5c968d8294147e, type: 2}
+  - {fileID: 11400000, guid: 7f5d2212864c90c40ae129a1e42ca73d, type: 2}
+  - {fileID: 11400000, guid: b43c4ec485d574c488fb2ffc162ae794, type: 2}
+  - {fileID: 11400000, guid: 823c2139190e6554f97c76e30b91c2c2, type: 2}
+  - {fileID: 11400000, guid: fc4939162b2b39042a2a5484d1023687, type: 2}
+  - {fileID: 11400000, guid: 7c9adfcdf05bc634fa0d4192b3a229b8, type: 2}
+  - {fileID: 11400000, guid: f5db74f6c3c897647b778422456e6703, type: 2}

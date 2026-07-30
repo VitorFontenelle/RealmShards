@@ -66,6 +66,14 @@ namespace RealmShards
                         _byId[d.ContentId] = d;
             }
 
+            var catalog = Core.RuntimeContentCatalog.Get();
+            if (catalog != null && catalog.Abilities != null)
+            {
+                foreach (var d in catalog.Abilities)
+                    if (d != null && !string.IsNullOrEmpty(d.ContentId))
+                        _byId[d.ContentId] = d;
+            }
+
 #if UNITY_EDITOR
             if (_byId.Count == 0)
             {

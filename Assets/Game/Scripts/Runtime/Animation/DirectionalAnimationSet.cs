@@ -58,19 +58,22 @@ namespace RealmShards
             return source[index] != null ? source[index] : idleSprite;
         }
 
-        /// <summary>Maps runtime facing enum to Magus spritesheet row order.</summary>
+        /// <summary>
+        /// Magus sheets are authored North-first, then counter-clockwise:
+        /// N, NW, W, SW, S, SE, E, NE (left/right mirrored vs clockwise docs).
+        /// </summary>
         public static int ToSheetRow(FacingDirection8 facing)
         {
             return facing switch
             {
                 FacingDirection8.North => 0,
-                FacingDirection8.NorthEast => 1,
-                FacingDirection8.East => 2,
-                FacingDirection8.SouthEast => 3,
+                FacingDirection8.NorthWest => 1,
+                FacingDirection8.West => 2,
+                FacingDirection8.SouthWest => 3,
                 FacingDirection8.South => 4,
-                FacingDirection8.SouthWest => 5,
-                FacingDirection8.West => 6,
-                FacingDirection8.NorthWest => 7,
+                FacingDirection8.SouthEast => 5,
+                FacingDirection8.East => 6,
+                FacingDirection8.NorthEast => 7,
                 _ => 4
             };
         }

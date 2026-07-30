@@ -39,8 +39,9 @@ namespace RealmShards.Editor
             var mageCast = LoadSprites("Assets/Characters/Magus/attacking-spritesheet.png");
             var mageIdle = FirstSprite("Assets/Characters/Magus/standing.png");
             var arrow = PickArrowSprite(archer);
+            var abilities = LoadAbilityDefinitions();
 
-            catalog.EditorAssign(player, floor, arrow, knight, archer, mageRun, mageCast, mageIdle);
+            catalog.EditorAssign(player, floor, arrow, knight, archer, mageRun, mageCast, mageIdle, abilities);
             EditorUtility.SetDirty(catalog);
             AssetDatabase.SaveAssets();
             AssetDatabase.Refresh();
@@ -48,7 +49,7 @@ namespace RealmShards.Editor
             Debug.Log(
                 $"[RealmShards] RuntimeContentCatalog ready at {CatalogPath}. " +
                 $"Player={(player != null)}, Floor={(floor != null)}, Arrow={(arrow != null)}, " +
-                $"Knight={knight.Length}, Archer={archer.Length}, MageRun={mageRun.Length}.");
+                $"Knight={knight.Length}, Archer={archer.Length}, MageRun={mageRun.Length}, Abilities={abilities.Length}.");
 
             if (player == null)
                 Debug.LogWarning("[RealmShards] Player prefab missing — run Setup Player Content first.");
@@ -58,6 +59,21 @@ namespace RealmShards.Editor
                 Debug.LogWarning("[RealmShards] Enemy sheets returned 0 sprites — ensure Sprite Mode Multiple.");
 
             return catalog;
+        }
+
+        private static AbilityDefinition[] LoadAbilityDefinitions()
+        {
+            var guids = AssetDatabase.FindAssets("t:AbilityDefinition", new[] { "Assets/Game/Data/Abilities" });
+            var list = new List<AbilityDefinition>();
+            for (int i = 0; i < guids.Length; i++)
+            {
+                var path = AssetDatabase.GUIDToAssetPath(guids[i]);
+                var def = AssetDatabase.LoadAssetAtPath<AbilityDefinition>(path);
+                if (def != null)
+                    list.Add(def);
+            }
+
+            return list.OrderBy(a => a.ContentId, System.StringComparer.Ordinal).ToArray();
         }
 
         private static Sprite PickArrowSprite(Sprite[] archer)

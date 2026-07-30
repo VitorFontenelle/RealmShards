@@ -152,7 +152,7 @@ namespace RealmShards
 
         private void TryCast(int slot)
         {
-            Vector2 dir = aim != null ? aim.AimDirection : Vector2.down;
+            Vector2 dir = ResolveCastDirection();
             abilityCaster?.TryCast(slot, dir);
         }
 
@@ -163,6 +163,7 @@ namespace RealmShards
                 return;
             }
 
+            // Only dash if a Dash ability is actually equipped — never fall back to slot 3.
             for (int i = 0; i < AbilityCaster.SlotCount; i++)
             {
                 var def = abilityCaster.GetAbility(i);
@@ -172,8 +173,22 @@ namespace RealmShards
                     return;
                 }
             }
+        }
 
-            TryCast(3);
+        private Vector2 ResolveCastDirection()
+        {
+            // Attacks follow the Magus facing (movement look), not mouse aim.
+            var animator = GetComponentInChildren<DirectionalSpriteAnimator>();
+            if (animator != null)
+                return FacingUtility.ToVector(animator.Facing);
+
+            if (motor != null && motor.MoveInput.sqrMagnitude > 0.01f)
+                return motor.MoveInput.normalized;
+
+            if (aim != null && aim.AimDirection.sqrMagnitude > 0.01f)
+                return aim.AimDirection;
+
+            return Vector2.down;
         }
 
         private void CacheComponents()

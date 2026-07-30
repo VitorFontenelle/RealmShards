@@ -34,9 +34,9 @@ namespace RealmShards.Save
         public List<string> equippedAbilityIds = new List<string>
         {
             ContentIdDefaults.AbilityBasicBolt,
-            ContentIdDefaults.AbilityArcanePulse,
             string.Empty,
-            ContentIdDefaults.AbilityBlinkStep
+            string.Empty,
+            string.Empty
         };
 
         public List<string> unlockedCityIds = new List<string>
