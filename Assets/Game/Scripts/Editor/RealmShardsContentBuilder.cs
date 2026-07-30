@@ -56,9 +56,9 @@ namespace RealmShards.Editor
             var hitbox = BuildHitboxPrefab();
             var overlay = BuildOverlayPrefab();
             var pickup = BuildPickupPrefab();
-            var bolt = BuildAbility("ArcaneBolt", AbilityKind.Projectile, 0.35f, 14f, 2.5f);
-            var pulse = BuildAbility("ArcanePulse", AbilityKind.MeleeHitbox, 0.55f, 18f, 5f);
-            var blink = BuildAbility("BlinkStep", AbilityKind.Dash, 0.85f, 0f, 0f);
+            var bolt = BuildAbility("ArcaneBolt", "ability.basic_bolt", AbilityKind.Projectile, 0.35f, 14f, 2.5f, 0);
+            var pulse = BuildAbility("ArcanePulse", "ability.arcane_pulse", AbilityKind.MeleeHitbox, 0.55f, 18f, 5f, 15);
+            var blink = BuildAbility("BlinkStep", "ability.blink_step", AbilityKind.Dash, 0.85f, 0f, 0f, 20);
             TuneAbility(bolt, windup: 0.05f, active: 0.05f, recovery: 0.1f, range: 9f, speed: 13f);
             TuneAbility(pulse, windup: 0.08f, active: 0.12f, recovery: 0.18f, hitDistance: 0.8f, hitRadius: 0.95f);
             TuneAbility(blink, windup: 0.02f, active: 0.12f, recovery: 0.08f, dashDistance: 3.4f, dashDuration: 0.12f);
@@ -66,20 +66,10 @@ namespace RealmShards.Editor
             ConfigureAbilityPrefabs(pulse, projectile, hitbox, overlay);
             ConfigureAbilityPrefabs(blink, projectile, hitbox, overlay);
 
-            var vitalityCharm = BuildItem("VitalityCharm", ItemKind.StatBoost, "Raises max health and move speed.",
-                new Color(0.95f, 0.4f, 0.45f));
-            SetItemStats(vitalityCharm, maxHealth: 25f, moveSpeed: 0.4f);
-
-            var sparkRelic = BuildItem("SparkRelic", ItemKind.EventTrigger, "Instant heal and short i-frames.",
-                new Color(1f, 0.9f, 0.35f));
-            SetItemEvent(sparkRelic, heal: 999f, iframes: true, iframeTime: 1.25f);
-
-            var focusBand = BuildItem("FocusBand", ItemKind.AbilityModifier, "Slight mobility focus after pickup.",
-                new Color(0.45f, 0.75f, 1f));
+            RealmShardsItemContentBuilder.BuildAll();
 
             var player = BuildPlayerPrefab(animSet, material, bolt, pulse, bolt, blink, projectile, hitbox, overlay, pickup);
             BuildDummyPrefab();
-            BuildSamplePickups(pickup, vitalityCharm, sparkRelic, focusBand);
 
             AssetDatabase.SaveAssets();
             AssetDatabase.Refresh();
@@ -233,7 +223,7 @@ namespace RealmShards.Editor
             return mat;
         }
 
-        private static AbilityDefinition BuildAbility(string name, AbilityKind kind, float cd, float dmg, float kb)
+        private static AbilityDefinition BuildAbility(string name, string contentId, AbilityKind kind, float cd, float dmg, float kb, int cost)
         {
             string path = $"Assets/Game/Data/Abilities/{name}.asset";
             var asset = AssetDatabase.LoadAssetAtPath<AbilityDefinition>(path);
@@ -243,7 +233,7 @@ namespace RealmShards.Editor
                 AssetDatabase.CreateAsset(asset, path);
             }
 
-            asset.EditorConfigure(name, kind, cd, dmg, kb);
+            asset.EditorConfigure(contentId, name, kind, cd, dmg, kb, cost);
             EditorUtility.SetDirty(asset);
             return asset;
         }
@@ -283,43 +273,6 @@ namespace RealmShards.Editor
             so.FindProperty("castLockMovement").floatValue = windup + active * 0.5f;
             so.ApplyModifiedPropertiesWithoutUndo();
             EditorUtility.SetDirty(ability);
-        }
-
-        private static ItemDefinition BuildItem(string name, ItemKind kind, string desc, Color tint)
-        {
-            string path = $"Assets/Game/Data/Items/{name}.asset";
-            var asset = AssetDatabase.LoadAssetAtPath<ItemDefinition>(path);
-            if (asset == null)
-            {
-                asset = ScriptableObject.CreateInstance<ItemDefinition>();
-                AssetDatabase.CreateAsset(asset, path);
-            }
-
-            asset.EditorConfigure(name, kind, desc);
-            var so = new SerializedObject(asset);
-            so.FindProperty("tint").colorValue = tint;
-            so.ApplyModifiedPropertiesWithoutUndo();
-            EditorUtility.SetDirty(asset);
-            return asset;
-        }
-
-        private static void SetItemStats(ItemDefinition item, float maxHealth, float moveSpeed)
-        {
-            var so = new SerializedObject(item);
-            so.FindProperty("maxHealthBonus").floatValue = maxHealth;
-            so.FindProperty("moveSpeedBonus").floatValue = moveSpeed;
-            so.ApplyModifiedPropertiesWithoutUndo();
-            EditorUtility.SetDirty(item);
-        }
-
-        private static void SetItemEvent(ItemDefinition item, float heal, bool iframes, float iframeTime)
-        {
-            var so = new SerializedObject(item);
-            so.FindProperty("healAmount").floatValue = heal;
-            so.FindProperty("grantIFrames").boolValue = iframes;
-            so.FindProperty("iFrameDuration").floatValue = iframeTime;
-            so.ApplyModifiedPropertiesWithoutUndo();
-            EditorUtility.SetDirty(item);
         }
 
         private static GameObject BuildProjectilePrefab()
@@ -426,31 +379,6 @@ namespace RealmShards.Editor
             return prefab;
         }
 
-        private static void BuildSamplePickups(
-            GameObject pickupPrefab,
-            ItemDefinition a,
-            ItemDefinition b,
-            ItemDefinition c)
-        {
-            CreateConfiguredPickup("Assets/Game/Prefabs/Pickups/VitalityCharmPickup.prefab", pickupPrefab, a);
-            CreateConfiguredPickup("Assets/Game/Prefabs/Pickups/SparkRelicPickup.prefab", pickupPrefab, b);
-            CreateConfiguredPickup("Assets/Game/Prefabs/Pickups/FocusBandPickup.prefab", pickupPrefab, c);
-        }
-
-        private static void CreateConfiguredPickup(string path, GameObject basePrefab, ItemDefinition item)
-        {
-            var instance = PrefabUtility.InstantiatePrefab(basePrefab) as GameObject;
-            if (instance == null)
-            {
-                return;
-            }
-
-            var pickup = instance.GetComponent<ItemPickup>();
-            pickup?.Setup(item);
-            PrefabUtility.SaveAsPrefabAsset(instance, path);
-            Object.DestroyImmediate(instance);
-        }
-
         private static GameObject BuildPlayerPrefab(
             DirectionalAnimationSet animSet,
             Material material,
@@ -527,8 +455,10 @@ namespace RealmShards.Editor
             root.AddComponent<PlayerMotor>();
             root.AddComponent<PlayerAim>();
             root.AddComponent<PlayerInteractor>();
+            root.AddComponent<PlayerItemModifiers>();
             var inventory = root.AddComponent<PlayerInventory>();
             inventory.Configure(6, pickup);
+            root.AddComponent<ItemMagnet>();
 
             var caster = root.AddComponent<AbilityCaster>();
             caster.ConfigureDefaults(basic, a1, a2, a3, projectile, hitbox, overlay);

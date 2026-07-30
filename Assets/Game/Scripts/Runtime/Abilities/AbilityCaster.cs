@@ -19,6 +19,8 @@ namespace RealmShards
         [SerializeField] private PlayerMotor motor;
         [SerializeField] private Rigidbody2D body;
         [SerializeField] private DirectionalSpriteAnimator animator;
+        [SerializeField] private PlayerItemModifiers modifiers;
+        [SerializeField] private PlayerInventory inventory;
         [SerializeField] private Color projectileTint = Color.white;
 
         private readonly float[] _cooldownRemaining = new float[SlotCount];
@@ -41,9 +43,7 @@ namespace RealmShards
             for (int i = 0; i < SlotCount; i++)
             {
                 if (_cooldownRemaining[i] > 0f)
-                {
                     _cooldownRemaining[i] -= Time.deltaTime;
-                }
             }
         }
 
@@ -66,10 +66,7 @@ namespace RealmShards
             CacheRefs();
         }
 
-        public void SetProjectileTint(Color tint)
-        {
-            projectileTint = tint;
-        }
+        public void SetProjectileTint(Color tint) => projectileTint = tint;
 
         public void SetAbility(int slot, AbilityDefinition definition)
         {
@@ -82,17 +79,14 @@ namespace RealmShards
             }
         }
 
-        public AbilityDefinition GetAbility(int slot)
+        public AbilityDefinition GetAbility(int slot) => slot switch
         {
-            return slot switch
-            {
-                0 => basicAbility,
-                1 => ability1,
-                2 => ability2,
-                3 => ability3,
-                _ => null
-            };
-        }
+            0 => basicAbility,
+            1 => ability1,
+            2 => ability2,
+            3 => ability3,
+            _ => null
+        };
 
         public float GetCooldownRemaining(int slot)
         {
@@ -100,28 +94,26 @@ namespace RealmShards
             return Mathf.Max(0f, _cooldownRemaining[slot]);
         }
 
+        public float GetCooldownNormalized(int slot)
+        {
+            var ability = GetAbility(slot);
+            if (ability == null) return 0f;
+            float cd = EffectiveCooldown(ability);
+            if (cd <= 0.01f) return 0f;
+            return Mathf.Clamp01(GetCooldownRemaining(slot) / cd);
+        }
+
         public bool TryCast(int slot, Vector2 aimDirection)
         {
             if (_casting || !isActiveAndEnabled)
-            {
                 return false;
-            }
 
             var ability = GetAbility(slot);
-            if (ability == null)
-            {
+            if (ability == null || _cooldownRemaining[slot] > 0f)
                 return false;
-            }
-
-            if (_cooldownRemaining[slot] > 0f)
-            {
-                return false;
-            }
 
             if (aimDirection.sqrMagnitude < 0.001f)
-            {
                 aimDirection = Vector2.right;
-            }
 
             aimDirection.Normalize();
             _castRoutine = StartCoroutine(CastRoutine(slot, ability, aimDirection));
@@ -145,13 +137,10 @@ namespace RealmShards
             _casting = true;
             animator?.PlayCast();
             motor?.SetCastLocked(true);
-
             SpawnOverlay(ability, aim);
 
             if (ability.Windup > 0f)
-            {
                 yield return new WaitForSeconds(ability.Windup);
-            }
 
             ExecuteEffect(ability, aim);
 
@@ -159,38 +148,47 @@ namespace RealmShards
             float unlockAt = Time.time + lockTime;
 
             if (ability.ActiveDuration > 0f)
-            {
                 yield return new WaitForSeconds(ability.ActiveDuration);
-            }
-
             if (ability.Recovery > 0f)
-            {
                 yield return new WaitForSeconds(ability.Recovery);
-            }
 
-            _cooldownRemaining[slot] = ability.Cooldown;
+            _cooldownRemaining[slot] = EffectiveCooldown(ability);
             _casting = false;
             _castRoutine = null;
 
             float remainingLock = unlockAt - Time.time;
             if (remainingLock > 0f)
-            {
                 yield return new WaitForSeconds(remainingLock);
-            }
 
             motor?.SetCastLocked(false);
         }
 
+        private float EffectiveCooldown(AbilityDefinition ability)
+        {
+            float cd = ability.Cooldown;
+            return modifiers != null ? modifiers.ScaleCooldown(cd) : cd;
+        }
+
+        private float EffectiveDamage(AbilityDefinition ability)
+        {
+            float dmg = ability.Damage;
+            return modifiers != null ? modifiers.ScaleDamage(dmg) : dmg;
+        }
+
+        private AbilityDefinition _lastCastAbility;
+
         private void ExecuteEffect(AbilityDefinition ability, Vector2 aim)
         {
+            _lastCastAbility = ability;
             var ctx = BuildContext(aim);
             switch (ability.Kind)
             {
                 case AbilityKind.Projectile:
-                    FireProjectile(ability, ctx);
+                    FireProjectile(ability, ctx, aim);
                     break;
                 case AbilityKind.MeleeHitbox:
                     SpawnMelee(ability, ctx);
+                    ApplyStatusesInRadius(ability, ctx);
                     break;
                 case AbilityKind.Dash:
                     StartCoroutine(DashRoutine(ability, ctx));
@@ -198,58 +196,118 @@ namespace RealmShards
             }
         }
 
-        private void FireProjectile(AbilityDefinition ability, AbilityContext ctx)
+        private void ApplyStatusesInRadius(AbilityDefinition ability, AbilityContext ctx)
+        {
+            if (ability.StatusEffects == null || ability.StatusEffects.Length == 0)
+                return;
+            float radius = ability.HitboxRadius;
+            if (modifiers != null)
+                radius = modifiers.ScalePulseRadius(radius);
+            Vector2 pos = ctx.Origin + ctx.AimDirection * ability.HitboxDistance;
+            var hits = Physics2D.OverlapCircleAll(pos, radius);
+            for (int i = 0; i < hits.Length; i++)
+            {
+                var h = hits[i].GetComponentInParent<Health>();
+                if (h == null || h == health) continue;
+                ApplyStatusesToVictim(h, ability);
+            }
+        }
+
+        private static void ApplyStatusesToVictim(Health victim, AbilityDefinition ability)
+        {
+            if (victim == null || ability == null || ability.StatusEffects == null)
+                return;
+            var host = victim.GetComponent<Magic.StatusEffectHost>();
+            if (host == null)
+                host = victim.gameObject.AddComponent<Magic.StatusEffectHost>();
+            for (int i = 0; i < ability.StatusEffects.Length; i++)
+                host.Apply(ability.StatusEffects[i]);
+        }
+
+        private void FireProjectile(AbilityDefinition ability, AbilityContext ctx, Vector2 aim)
+        {
+            bool pierce = ability.Pierce || (modifiers != null && modifiers.BoltPierce);
+            int extras = modifiers != null ? modifiers.BoltSplitExtra : 0;
+            int total = 1 + extras;
+            float spread = extras > 0 ? 18f : 0f;
+
+            for (int i = 0; i < total; i++)
+            {
+                float angleOffset = 0f;
+                if (total > 1)
+                    angleOffset = Mathf.Lerp(-spread, spread, total == 1 ? 0.5f : i / (float)(total - 1));
+
+                Vector2 dir = Rotate(aim, angleOffset);
+                SpawnOneProjectile(ability, ctx, dir, pierce);
+            }
+        }
+
+        private static Vector2 Rotate(Vector2 v, float degrees)
+        {
+            float rad = degrees * Mathf.Deg2Rad;
+            float c = Mathf.Cos(rad);
+            float s = Mathf.Sin(rad);
+            return new Vector2(v.x * c - v.y * s, v.x * s + v.y * c).normalized;
+        }
+
+        private void SpawnOneProjectile(AbilityDefinition ability, AbilityContext ctx, Vector2 dir, bool pierce)
         {
             var prefab = ability.ProjectilePrefab != null ? ability.ProjectilePrefab : defaultProjectilePrefab;
-            if (prefab == null)
-            {
-                return;
-            }
+            if (prefab == null) return;
 
-            var projectile = PoolHub.Instance.Spawn<Projectile>(
-                prefab,
-                ctx.Origin + ctx.AimDirection * 0.4f,
-                Quaternion.identity);
-
+            Vector2 spawn = ctx.Origin + dir * 0.4f;
+            var projectile = PoolHub.Instance != null
+                ? PoolHub.Instance.Spawn<Projectile>(prefab, spawn, Quaternion.identity)
+                : null;
             if (projectile == null)
             {
-                var go = Instantiate(prefab, ctx.Origin + ctx.AimDirection * 0.4f, Quaternion.identity);
+                var go = Instantiate(prefab, spawn, Quaternion.identity);
                 projectile = go.GetComponent<Projectile>();
             }
 
             projectile?.Launch(
-                ctx.Origin + ctx.AimDirection * 0.4f,
-                ctx.AimDirection,
+                spawn,
+                dir,
                 ctx.Faction,
-                ability.Damage,
+                EffectiveDamage(ability),
                 ability.Knockback,
                 ability.ProjectileSpeed,
                 ability.Range / Mathf.Max(0.1f, ability.ProjectileSpeed),
-                ability.Pierce,
-                projectileTint);
+                pierce,
+                projectileTint,
+                OnProjectileHit);
+        }
+
+        private void OnProjectileHit(DamageInfo info, Health victim)
+        {
+            inventory?.NotifyPlayerDealtDamage(in info, victim);
+            ApplyStatusesToVictim(victim, _lastCastAbility);
         }
 
         private void SpawnMelee(AbilityDefinition ability, AbilityContext ctx)
         {
             var prefab = ability.HitboxPrefab != null ? ability.HitboxPrefab : defaultHitboxPrefab;
-            if (prefab == null)
-            {
-                return;
-            }
+            if (prefab == null) return;
 
             Vector2 pos = ctx.Origin + ctx.AimDirection * ability.HitboxDistance;
-            var hitbox = PoolHub.Instance.Spawn<Hitbox>(prefab, pos, Quaternion.identity);
+            var hitbox = PoolHub.Instance != null
+                ? PoolHub.Instance.Spawn<Hitbox>(prefab, pos, Quaternion.identity)
+                : null;
             if (hitbox == null)
             {
                 var go = Instantiate(prefab, pos, Quaternion.identity);
                 hitbox = go.GetComponent<Hitbox>();
             }
 
+            float radius = ability.HitboxRadius;
+            if (modifiers != null)
+                radius = modifiers.ScalePulseRadius(radius);
+
             hitbox?.Activate(
                 pos,
                 ctx.AimDirection,
                 ctx.Faction,
-                ability.Damage,
+                EffectiveDamage(ability),
                 ability.Knockback,
                 ability.ActiveDuration > 0f ? ability.ActiveDuration : 0.12f,
                 ctx.CasterTransform,
@@ -257,28 +315,25 @@ namespace RealmShards
                 ability.Pierce);
 
             if (hitbox != null)
-            {
-                hitbox.transform.localScale = Vector3.one * Mathf.Max(0.25f, ability.HitboxRadius);
-            }
+                hitbox.transform.localScale = Vector3.one * Mathf.Max(0.25f, radius);
         }
 
         private IEnumerator DashRoutine(AbilityDefinition ability, AbilityContext ctx)
         {
             if (ctx.Motor == null && ctx.CasterBody == null)
-            {
                 yield break;
-            }
 
             if (ability.DashInvulnerable && ctx.Health != null)
-            {
                 ctx.Health.PulseIFrames(ability.DashDuration + 0.05f);
-            }
+
+            float distance = ability.DashDistance;
+            if (modifiers != null)
+                distance = modifiers.ScaleBlinkDistance(distance);
 
             Vector2 start = ctx.Origin;
-            Vector2 end = start + ctx.AimDirection * ability.DashDistance;
+            Vector2 end = start + ctx.AimDirection * distance;
             float duration = Mathf.Max(0.01f, ability.DashDuration);
             float t = 0f;
-
             ctx.Motor?.SetDashing(true);
 
             while (t < duration)
@@ -305,20 +360,16 @@ namespace RealmShards
         private void SpawnOverlay(AbilityDefinition ability, Vector2 aim)
         {
             var prefab = ability.EffectOverlayPrefab != null ? ability.EffectOverlayPrefab : defaultOverlayPrefab;
-            if (prefab == null)
-            {
-                return;
-            }
+            if (prefab == null) return;
 
             Vector2 origin = body != null ? body.position : (Vector2)transform.position;
-            var go = PoolHub.Instance.Spawn(prefab, origin, Quaternion.identity);
+            var go = PoolHub.Instance != null
+                ? PoolHub.Instance.Spawn(prefab, origin, Quaternion.identity)
+                : null;
             if (go == null)
-            {
                 go = Instantiate(prefab, origin, Quaternion.identity);
-            }
 
-            var overlay = go.GetComponent<AbilityEffectOverlay>();
-            overlay?.Play(transform, aim, ability.TotalCastTime, projectileTint);
+            go.GetComponent<AbilityEffectOverlay>()?.Play(transform, aim, ability.TotalCastTime, projectileTint);
         }
 
         private AbilityContext BuildContext(Vector2 aim)
@@ -344,6 +395,8 @@ namespace RealmShards
             if (motor == null) motor = GetComponent<PlayerMotor>();
             if (body == null) body = GetComponent<Rigidbody2D>();
             if (animator == null) animator = GetComponentInChildren<DirectionalSpriteAnimator>();
+            if (modifiers == null) modifiers = GetComponent<PlayerItemModifiers>();
+            if (inventory == null) inventory = GetComponent<PlayerInventory>();
         }
     }
 }

@@ -1,3 +1,4 @@
+using RealmShards.Magic;
 using UnityEngine;
 
 namespace RealmShards
@@ -13,9 +14,13 @@ namespace RealmShards
     public sealed class AbilityDefinition : ScriptableObject
     {
         [Header("Identity")]
+        [SerializeField] private string contentId = "ability.unnamed";
         [SerializeField] private string displayName = "Ability";
         [SerializeField] private AbilityKind kind = AbilityKind.Projectile;
         [SerializeField] private Sprite icon;
+        [SerializeField] private int unlockCost;
+        [SerializeField] private string schoolId = "school.neutral";
+        [SerializeField] private MagicElement element = MagicElement.Arcane;
 
         [Header("Timing (seconds)")]
         [SerializeField] private float cooldown = 0.4f;
@@ -35,15 +40,21 @@ namespace RealmShards
         [SerializeField] private float dashDistance = 3.25f;
         [SerializeField] private float dashDuration = 0.12f;
         [SerializeField] private bool dashInvulnerable = true;
+        [SerializeField] private StatusApplication[] statusEffects;
 
-        [Header("Prefabs (optional overlays / overrides)")]
+        [Header("Prefabs")]
         [SerializeField] private GameObject projectilePrefab;
         [SerializeField] private GameObject hitboxPrefab;
         [SerializeField] private GameObject effectOverlayPrefab;
 
+        public string ContentId => contentId;
         public string DisplayName => displayName;
         public AbilityKind Kind => kind;
         public Sprite Icon => icon;
+        public int UnlockCost => unlockCost;
+        public string SchoolId => schoolId;
+        public MagicElement Element => element;
+        public StatusApplication[] StatusEffects => statusEffects;
         public float Cooldown => cooldown;
         public float Windup => windup;
         public float ActiveDuration => activeDuration;
@@ -62,7 +73,6 @@ namespace RealmShards
         public GameObject ProjectilePrefab => projectilePrefab;
         public GameObject HitboxPrefab => hitboxPrefab;
         public GameObject EffectOverlayPrefab => effectOverlayPrefab;
-
         public float TotalCastTime => windup + activeDuration + recovery;
 
         public void SetPrefabs(GameObject projectile, GameObject hitbox, GameObject overlay)
@@ -74,17 +84,30 @@ namespace RealmShards
 
 #if UNITY_EDITOR
         public void EditorConfigure(
+            string id,
             string name,
             AbilityKind abilityKind,
             float cd,
             float dmg,
-            float kb)
+            float kb,
+            int cost = 0,
+            string school = "school.neutral",
+            MagicElement elem = MagicElement.Arcane)
         {
+            contentId = id;
             displayName = name;
             kind = abilityKind;
             cooldown = cd;
             damage = dmg;
             knockback = kb;
+            unlockCost = cost;
+            schoolId = school;
+            element = elem;
+        }
+
+        public void EditorSetStatuses(params StatusApplication[] statuses)
+        {
+            statusEffects = statuses;
         }
 #endif
     }
