@@ -1,0 +1,23 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 097cf3aaa8ff4fd4a97dc180de8a7d7e, type: 3}
+  m_Name: NeutralArcana
+  m_EditorClassIdentifier: Assembly-CSharp::RealmShards.Magic.MagicSchoolDefinition
+  schoolId: school.neutral
+  displayName: Neutral Arcana
+  description: Baseline Magus craft.
+  accentColor: {r: 0.7, g: 0.5, b: 0.95, a: 1}
+  icon: {fileID: 0}
+  abilityIds:
+  - ability.basic_bolt
+  - ability.arcane_pulse
+  - ability.blink_step

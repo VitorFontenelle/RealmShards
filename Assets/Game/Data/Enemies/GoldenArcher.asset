@@ -1,0 +1,38 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: ff37ee15b822eb54082743e8844ba4b5, type: 3}
+  m_Name: GoldenArcher
+  m_EditorClassIdentifier: Assembly-CSharp::RealmShards.Enemies.EnemyDefinition
+  displayName: Golden Archer
+  archetype: 1
+  maxHealth: 28
+  moveSpeed: 2.1
+  aggroRange: 14
+  attackRange: 9
+  attackDamage: 7
+  telegraphDuration: 0.55
+  activeHitDuration: 0.18
+  attackCooldown: 1.4
+  hitboxRadius: 0.85
+  hitboxForwardOffset: 0.7
+  preferredDistance: 5.5
+  projectileSpeed: 8
+  projectileLifetime: 3
+  retargetInterval: 1.25
+  tint: {r: 1, g: 0.82, b: 0.25, a: 1}
+  spritesheetAssetPath: Assets/Characters/Enemies/archer-spritesheet.png
+  walkFrameStart: 0
+  walkFrameCount: 6
+  attackFrameStart: 24
+  attackFrameCount: 6
+  animFps: 8
+  prefabOverride: {fileID: 0}

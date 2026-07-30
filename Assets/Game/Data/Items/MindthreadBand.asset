@@ -1,0 +1,37 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: d5912163346686c49aca84ec0a679a48, type: 3}
+  m_Name: MindthreadBand
+  m_EditorClassIdentifier: Assembly-CSharp::RealmShards.ItemDefinition
+  contentId: item.mindthread_band
+  displayName: Mindthread Band
+  flavorText: Woven thoughts shorten the cast.
+  description: 15% cooldown reduction on all abilities.
+  kind: 2
+  icon: {fileID: -3951917044106802406, guid: 7fddd7d20b050044eb7d0fb1184852a3, type: 3}
+  tint: {r: 0.45, g: 0.75, b: 1, a: 1}
+  maxHealthBonus: 0
+  moveSpeedBonus: 0
+  damageMultiplierBonus: 0
+  cooldownMultiplier: 0.85
+  grantBoltPierce: 0
+  boltSplitExtraProjectiles: 0
+  pulseRadiusBonus: 0
+  blinkDistanceBonus: 0
+  pickupMagnetRadius: 0
+  abilityDamageFlatBonus: 0
+  onHitHeal: 0
+  onHitVestigeChance: 0
+  onHitVestigeAmount: 1
+  healAmount: 0
+  grantIFrames: 0
+  iFrameDuration: 1

@@ -1,0 +1,37 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: d5912163346686c49aca84ec0a679a48, type: 3}
+  m_Name: LodestoneCharm
+  m_EditorClassIdentifier: Assembly-CSharp::RealmShards.ItemDefinition
+  contentId: item.lodestone_charm
+  displayName: Lodestone Charm
+  flavorText: Relics lean toward the bearer.
+  description: Pickup magnet radius 3.5.
+  kind: 2
+  icon: {fileID: 8025460805842282726, guid: 9e67289bb50ce404d844c54c2cdf258d, type: 3}
+  tint: {r: 0.4, g: 0.85, b: 0.5, a: 1}
+  maxHealthBonus: 0
+  moveSpeedBonus: 0
+  damageMultiplierBonus: 0
+  cooldownMultiplier: 1
+  grantBoltPierce: 0
+  boltSplitExtraProjectiles: 0
+  pulseRadiusBonus: 0
+  blinkDistanceBonus: 0
+  pickupMagnetRadius: 3.5
+  abilityDamageFlatBonus: 0
+  onHitHeal: 0
+  onHitVestigeChance: 0
+  onHitVestigeAmount: 1
+  healAmount: 0
+  grantIFrames: 0
+  iFrameDuration: 1
