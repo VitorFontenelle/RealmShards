@@ -94,6 +94,15 @@ namespace RealmShards
             _timer = lifetime;
             _hitIds.Clear();
             _active = true;
+
+            var sr = GetComponent<SpriteRenderer>();
+            if (sr != null)
+            {
+                sr.sortingLayerName = Core.SortingLayers.SkillEffectsFront;
+                if (sr.sortingOrder < 15)
+                    sr.sortingOrder = 15;
+            }
+
             gameObject.SetActive(true);
         }
 

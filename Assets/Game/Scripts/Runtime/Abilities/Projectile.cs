@@ -8,9 +8,10 @@ namespace RealmShards
         [SerializeField] private float damage = 10f;
         [SerializeField] private float knockback = 2.5f;
         [SerializeField] private float speed = 12f;
-        [SerializeField] private float lifetime = 2.5f;
+        [SerializeField] private float lifetime = 12f;
         [SerializeField] private bool pierce;
         [SerializeField] private SpriteRenderer spriteRenderer;
+        [SerializeField] private float offscreenPadding = 0.12f;
 
         private Rigidbody2D _body;
         private PrefabPool _pool;
@@ -19,6 +20,7 @@ namespace RealmShards
         private bool _active;
         private System.Action<DamageInfo, Health> _onHit;
         private readonly System.Collections.Generic.HashSet<int> _hitIds = new System.Collections.Generic.HashSet<int>();
+        private Camera _cam;
 
         private void Awake()
         {
@@ -40,6 +42,7 @@ namespace RealmShards
                 spriteRenderer = GetComponent<SpriteRenderer>();
             }
 
+            EnsureVisibleSorting();
             CombatLayers.TrySetLayer(gameObject, CombatLayers.Projectile);
         }
 
@@ -51,7 +54,7 @@ namespace RealmShards
             }
 
             _timer -= Time.deltaTime;
-            if (_timer <= 0f)
+            if (_timer <= 0f || IsOffscreen())
             {
                 Despawn();
             }
@@ -96,7 +99,9 @@ namespace RealmShards
             Color tint,
             System.Action<DamageInfo, Health> onHit = null)
         {
-            transform.position = position;
+            EnsureVisibleSorting();
+
+            transform.position = new Vector3(position.x, position.y, 0f);
             if (direction.sqrMagnitude < 0.001f)
             {
                 direction = Vector2.right;
@@ -110,12 +115,14 @@ namespace RealmShards
             damage = damageAmount;
             knockback = knockbackForce;
             speed = moveSpeed;
-            lifetime = life;
+            // Prefer long travel; primary despawn is leaving the camera view.
+            lifetime = Mathf.Max(life, 8f);
             pierce = canPierce;
             _onHit = onHit;
             _timer = lifetime;
             _hitIds.Clear();
             _active = true;
+            _cam = Camera.main;
 
             if (spriteRenderer != null)
             {
@@ -123,6 +130,32 @@ namespace RealmShards
             }
 
             gameObject.SetActive(true);
+        }
+
+        private void EnsureVisibleSorting()
+        {
+            if (spriteRenderer == null)
+                spriteRenderer = GetComponent<SpriteRenderer>();
+            if (spriteRenderer == null)
+                return;
+
+            spriteRenderer.sortingLayerName = Core.SortingLayers.SkillEffectsFront;
+            if (spriteRenderer.sortingOrder < 20)
+                spriteRenderer.sortingOrder = 20;
+        }
+
+        private bool IsOffscreen()
+        {
+            if (_cam == null)
+                _cam = Camera.main;
+            if (_cam == null)
+                return false;
+
+            Vector3 vp = _cam.WorldToViewportPoint(transform.position);
+            float pad = offscreenPadding;
+            return vp.z < 0f ||
+                   vp.x < -pad || vp.x > 1f + pad ||
+                   vp.y < -pad || vp.y > 1f + pad;
         }
 
         private void OnTriggerEnter2D(Collider2D other)

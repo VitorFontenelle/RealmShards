@@ -72,6 +72,9 @@ namespace RealmShards
 
             if (spriteRenderer != null)
             {
+                spriteRenderer.sortingLayerName = Core.SortingLayers.SkillEffectsFront;
+                if (spriteRenderer.sortingOrder < 20)
+                    spriteRenderer.sortingOrder = 25;
                 tint.a = 0.85f;
                 spriteRenderer.color = tint;
             }

@@ -283,6 +283,7 @@ namespace RealmShards.Editor
             var sr = root.AddComponent<SpriteRenderer>();
             sr.sprite = AssetDatabase.GetBuiltinExtraResource<Sprite>("UI/Skin/Knob.psd");
             sr.color = new Color(0.7f, 0.45f, 1f, 1f);
+            sr.sortingLayerName = SortingLayers.SkillEffectsFront;
             sr.sortingOrder = 20;
 
             var rb = root.AddComponent<Rigidbody2D>();
@@ -307,6 +308,7 @@ namespace RealmShards.Editor
             var sr = root.AddComponent<SpriteRenderer>();
             sr.sprite = AssetDatabase.GetBuiltinExtraResource<Sprite>("UI/Skin/Knob.psd");
             sr.color = new Color(0.85f, 0.55f, 1f, 0.35f);
+            sr.sortingLayerName = SortingLayers.SkillEffectsFront;
             sr.sortingOrder = 15;
 
             var col = root.AddComponent<CircleCollider2D>();
@@ -326,6 +328,7 @@ namespace RealmShards.Editor
             var sr = root.AddComponent<SpriteRenderer>();
             sr.sprite = AssetDatabase.GetBuiltinExtraResource<Sprite>("UI/Skin/Knob.psd");
             sr.color = new Color(0.8f, 0.5f, 1f, 0.5f);
+            sr.sortingLayerName = SortingLayers.SkillEffectsFront;
             sr.sortingOrder = 25;
             root.transform.localScale = Vector3.one * 0.6f;
             root.AddComponent<AbilityEffectOverlay>();

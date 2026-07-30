@@ -289,7 +289,7 @@ namespace RealmShards
                 EffectiveDamage(ability),
                 ability.Knockback,
                 ability.ProjectileSpeed,
-                ability.Range / Mathf.Max(0.1f, ability.ProjectileSpeed),
+                12f,
                 pierce,
                 projectileTint,
                 OnProjectileHit);
