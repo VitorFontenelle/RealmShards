@@ -15,9 +15,7 @@ namespace RealmShards.UI
             canvas.renderMode = RenderMode.ScreenSpaceOverlay;
             canvas.sortingOrder = sortingOrder;
             var scaler = root.AddComponent<CanvasScaler>();
-            scaler.uiScaleMode = CanvasScaler.ScaleMode.ScaleWithScreenSize;
-            scaler.referenceResolution = new Vector2(1920, 1080);
-            scaler.matchWidthOrHeight = 0.5f;
+            UiScaleConfig.Apply(scaler);
             root.AddComponent<GraphicRaycaster>();
             return canvas;
         }
