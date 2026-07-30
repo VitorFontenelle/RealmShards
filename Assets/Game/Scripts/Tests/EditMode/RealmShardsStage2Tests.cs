@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using NUnit.Framework;
+using RealmShards.Enemies;
 using RealmShards.Progression;
 using RealmShards.Rooms;
 using RealmShards.Runs;

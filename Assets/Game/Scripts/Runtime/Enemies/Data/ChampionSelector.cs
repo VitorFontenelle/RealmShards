@@ -106,10 +106,10 @@ namespace RealmShards.Enemies
                 decade >= 2 ? "champion.ashen_warden" : decade >= 1 ? "champion.gilded_sentinel" : "champion.arcane_core",
                 enemy.DisplayName,
                 enemy,
-                opensArcaneCore: true,
-                minYear: 0,
-                maxYear: 9999,
-                weight: 1f);
+                opensArcaneCoreFlag: true,
+                minY: 0,
+                maxY: 9999,
+                w: 1f);
             return champ;
         }
     }

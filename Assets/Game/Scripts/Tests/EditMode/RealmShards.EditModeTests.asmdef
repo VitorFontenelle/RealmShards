@@ -2,9 +2,7 @@
     "name": "RealmShards.EditModeTests",
     "rootNamespace": "RealmShards.Tests",
     "references": [
-        "RealmShards.Runtime",
-        "UnityEngine.TestRunner",
-        "UnityEditor.TestRunner"
+        "RealmShards.Runtime"
     ],
     "includePlatforms": [
         "Editor"

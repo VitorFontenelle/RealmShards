@@ -62,13 +62,13 @@ namespace RealmShards.CameraSystem
             {
                 var p = players[i];
                 if (p?.Transform == null || !p.IsAlive) continue;
-                UpdateOffscreenArrow(p.Transform.GetInstanceID(), p.Transform.position, i);
+                UpdateOffscreenArrow(p.Transform.GetEntityId().GetHashCode(), p.Transform.position, i);
             }
         }
 
         private void EnsureArrow(PlayerInputBridge bridge)
         {
-            int id = bridge.transform.GetInstanceID();
+            int id = bridge.transform.GetEntityId().GetHashCode();
             if (_arrows.ContainsKey(id)) return;
             var img = UiFactory.AddPanel(_canvas.transform, $"Arrow_{id}",
                 new Color(1f, 0.9f, 0.4f, 0.9f),
