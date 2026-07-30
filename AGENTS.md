@@ -19,25 +19,47 @@ Unity Editor drives everything (compile, tests, build, run).
 
 The Editor will not compile, test, build, or run without an activated license — a bare launch
 exits with code `198` and logs `No valid Unity Editor license found`. Activation needs a Unity
-account and is a **one-time setup** (the resulting license persists in the VM snapshot; it is
-NOT part of the update script). Provide ONE of these via secrets, then run
-`~/realmshards-unity.sh activate`:
+account (a free Personal account is enough). Provide ONE of these via secrets:
 
 - `UNITY_EMAIL` + `UNITY_PASSWORD` (+ `UNITY_SERIAL` only for Plus/Pro seats), or
 - `UNITY_LICENSE` = full contents of a `.ulf` file from manual activation
   (`https://license.unity3d.com/manual`; a `.alf` request file can be generated with
-  `Unity -batchmode -nographics -quit -createManualActivationFile`).
+  `/opt/unity/Editor/Unity -batchmode -nographics -quit -createManualActivationFile`).
 
-Confirm with `~/realmshards-unity.sh status` (should list a Personal/Pro entitlement).
+Then activate (`~/realmshards-unity.sh activate`, or run the raw command directly):
+
+```bash
+# email/password (Personal or Pro); add `-serial "$UNITY_SERIAL"` only for Plus/Pro
+/opt/unity/Editor/Unity -batchmode -nographics -quit \
+  -username "$UNITY_EMAIL" -password "$UNITY_PASSWORD" -logFile ~/unity-logs/activate.log
+# or, with a .ulf: echo "$UNITY_LICENSE" > ~/unity.ulf && \
+#   /opt/unity/Editor/Unity -batchmode -nographics -quit -manualLicenseFile ~/unity.ulf -logFile ~/unity-logs/activate.log
+```
+
+Confirm with `~/realmshards-unity.sh status` (i.e.
+`/opt/unity/Editor/Data/Resources/Licensing/Client/Unity.Licensing.Client --showEntitlements`);
+it should list a Personal/Pro entitlement.
+
+Note: an activated license persists in the VM snapshot, but Unity licenses are machine-bound, so
+if a future VM reports a different machine id the persisted license can read as absent. Keep the
+Unity secrets available and simply **re-run activation whenever `status` shows no license** — it
+is idempotent. This is why activation is intentionally left out of the startup update script.
 
 ### Running things (all via batchmode; only the built player needs a display)
 
-- Content setup — run after a fresh pull / when generated assets are missing (see
-  `CONTENT_PIPELINE.md`): `~/realmshards-unity.sh setup`
-  (`-executeMethod RealmShards.Editor.RealmShardsFullSetup.RunAll`).
-- EditMode tests: `~/realmshards-unity.sh test` (`-runTests -testPlatform EditMode`).
-  This is the fastest end-to-end check of core logic (world route, progression, save,
-  room planner, champion selector).
+`~/realmshards-unity.sh` wraps these; the raw commands (in case the helper is missing) are:
+
+```bash
+U=/opt/unity/Editor/Unity; P=/workspace
+# Content setup — run after a fresh pull / when generated assets are missing (CONTENT_PIPELINE.md)
+$U -batchmode -nographics -quit -projectPath $P \
+   -executeMethod RealmShards.Editor.RealmShardsFullSetup.RunAll -logFile ~/unity-logs/setup.log
+# EditMode tests — fastest end-to-end check of core logic (world route, progression, save,
+# room planner, champion selector). Results XML at ~/unity-logs/test-results.xml
+$U -batchmode -nographics -runTests -projectPath $P \
+   -testPlatform EditMode -testResults ~/unity-logs/test-results.xml -logFile ~/unity-logs/test.log
+```
+
 - `-batchmode -nographics` does NOT need Xvfb — it reaches the license/compile stage on its
   own. Only launching an actual **built standalone player** needs a display; run it under
   `xvfb-run -s "-screen 0 1280x800x24"` with Mesa software GL.
