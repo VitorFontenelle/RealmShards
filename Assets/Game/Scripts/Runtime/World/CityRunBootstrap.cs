@@ -1,3 +1,4 @@
+using System;
 using RealmShards.CameraSystem;
 using RealmShards.Core;
 using RealmShards.Enemies;
@@ -34,11 +35,21 @@ namespace RealmShards.World
                 hub.AddComponent<PoolHub>();
             }
 
-            if (warmProjectilePool)
-                ProjectilePool.Warm(16);
-
             if (buildArenaIfMissing)
-                _arena = ArenaBuilder.Build(roomSize, transform);
+            {
+                var session = GameContext.Instance?.RunSession;
+                int seed = (session?.Seed ?? Environment.TickCount) ^ ((session?.WorldNodeIndex ?? 0) * 9973);
+                int node = session?.WorldNodeIndex ?? 0;
+                bool capital = session?.IsCapitalNode == true;
+                var plan = CityRoomPlanner.Build(session?.Seed ?? seed, node, capital);
+                _arena = ArenaBuilder.BuildProcedural(seed, plan.TotalRooms, transform);
+            }
+
+            if (warmProjectilePool)
+            {
+                var catalog = RuntimeContentCatalog.Get();
+                ProjectilePool.Warm(24, catalog != null ? catalog.ArrowSprite : null);
+            }
 
             if (FindFirstObjectByType<RealmShards.Combat.DamageNumberService>() == null)
             {
@@ -54,6 +65,7 @@ namespace RealmShards.World
 
             SetupEncounter();
             CombatHud.EnsurePresent();
+            MinimapHud.EnsurePresent();
             PauseMenu.EnsurePresent();
             PlayerLocatePresenter.EnsurePresent();
         }
@@ -69,9 +81,14 @@ namespace RealmShards.World
                 camGo.AddComponent<AudioListener>();
                 cam.orthographic = true;
                 cam.orthographicSize = 7f;
-                cam.backgroundColor = new Color(0.12f, 0.11f, 0.14f, 1f);
+                cam.backgroundColor = Color.black;
                 cam.clearFlags = CameraClearFlags.SolidColor;
                 cam.transform.position = new Vector3(0f, 0f, -10f);
+            }
+            else
+            {
+                cam.backgroundColor = Color.black;
+                cam.clearFlags = CameraClearFlags.SolidColor;
             }
 
             var shared = cam.GetComponent<SharedOrthoCamera>();
@@ -79,16 +96,24 @@ namespace RealmShards.World
                 shared = cam.gameObject.AddComponent<SharedOrthoCamera>();
 
             Transform fallback = _arena.PlayerSpawn != null ? _arena.PlayerSpawn : transform;
-            shared.Configure(_arena.Bounds, fallback, 5f, 11f);
+            shared.Configure(_arena.Bounds, fallback, 5f, 12f);
         }
 
         private void SpawnPlayers()
         {
             GameObject prefab = playerPrefab;
+            if (prefab == null)
+            {
+                var catalog = RuntimeContentCatalog.Get();
+                if (catalog != null)
+                    prefab = catalog.PlayerPrefab;
+            }
 #if UNITY_EDITOR
             if (prefab == null)
                 prefab = UnityEditor.AssetDatabase.LoadAssetAtPath<GameObject>(PlayerPrefabPath);
 #endif
+            if (prefab == null)
+                Debug.LogError("[CityRun] Player prefab missing. Run RealmShards → Setup Player Content (builds Resources/GameContent).");
 
             Vector3 basePos = _arena.PlayerSpawn != null ? _arena.PlayerSpawn.position : Vector3.zero;
             var lobby = GameContext.Instance != null ? GameContext.Instance.Lobby : null;
@@ -121,6 +146,7 @@ namespace RealmShards.World
                 var instance = Instantiate(prefab, pos, Quaternion.identity);
                 instance.name = $"Player_{index + 1}";
                 try { instance.tag = "Player"; } catch { /* ignore */ }
+                NormalizePlayerVisuals(instance);
                 instance.GetComponent<PlayerController>()?.InitializePlayer(index);
                 LoadoutApplier.ApplyFromSession(instance.GetComponent<AbilityCaster>());
                 if (instance.GetComponent<Magic.StatusEffectHost>() == null)
@@ -147,6 +173,25 @@ namespace RealmShards.World
 
             if (index == 0)
                 CreatePlaceholderPlayer(pos);
+        }
+
+        private static void NormalizePlayerVisuals(GameObject player)
+        {
+            if (player == null)
+                return;
+
+            var renderers = player.GetComponentsInChildren<SpriteRenderer>(true);
+            for (int i = 0; i < renderers.Length; i++)
+            {
+                if (renderers[i] == null)
+                    continue;
+                renderers[i].sortingLayerName = SortingLayers.Characters;
+                if (renderers[i].sortingOrder < 8)
+                    renderers[i].sortingOrder = 10;
+            }
+
+            var animator = player.GetComponentInChildren<DirectionalSpriteAnimator>(true);
+            animator?.SetTargetHeight(1.8f);
         }
 
         private static void CreatePlaceholderPlayer(Vector3 pos)

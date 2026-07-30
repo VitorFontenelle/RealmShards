@@ -20,31 +20,67 @@ namespace RealmShards.Enemies
 
             Sprite[] sprites = null;
 
-#if UNITY_EDITOR
-            var assets = UnityEditor.AssetDatabase.LoadAllAssetsAtPath(assetPath);
-            var list = new List<Sprite>();
-            if (assets != null)
-            {
-                for (int i = 0; i < assets.Length; i++)
-                {
-                    if (assets[i] is Sprite s)
-                        list.Add(s);
-                }
-            }
+            var catalog = Core.RuntimeContentCatalog.Get();
+            if (catalog != null)
+                sprites = catalog.GetSheetSprites(assetPath);
 
-            list.Sort((a, b) => string.CompareOrdinal(a.name, b.name));
-            sprites = list.ToArray();
+            if (sprites == null || sprites.Length == 0)
+            {
+#if UNITY_EDITOR
+                var assets = UnityEditor.AssetDatabase.LoadAllAssetsAtPath(assetPath);
+                var list = new List<Sprite>();
+                if (assets != null)
+                {
+                    for (int i = 0; i < assets.Length; i++)
+                    {
+                        if (assets[i] is Sprite s)
+                            list.Add(s);
+                    }
+                }
+
+                list.Sort((a, b) =>
+                {
+                    int na = ExtractTrailingNumber(a.name);
+                    int nb = ExtractTrailingNumber(b.name);
+                    int cmp = na.CompareTo(nb);
+                    return cmp != 0 ? cmp : string.CompareOrdinal(a.name, b.name);
+                });
+                sprites = list.ToArray();
 #else
-            // Runtime builds: expect a Resources copy named without extension under Resources/Enemies/
-            string file = System.IO.Path.GetFileNameWithoutExtension(assetPath);
-            sprites = Resources.LoadAll<Sprite>("Enemies/" + file);
+                string file = System.IO.Path.GetFileNameWithoutExtension(assetPath);
+                sprites = Resources.LoadAll<Sprite>("Enemies/" + file);
+                if (sprites != null && sprites.Length > 1)
+                {
+                    System.Array.Sort(sprites, (a, b) =>
+                    {
+                        int na = ExtractTrailingNumber(a.name);
+                        int nb = ExtractTrailingNumber(b.name);
+                        int cmp = na.CompareTo(nb);
+                        return cmp != 0 ? cmp : string.CompareOrdinal(a.name, b.name);
+                    });
+                }
 #endif
+            }
 
             if (sprites == null)
                 sprites = System.Array.Empty<Sprite>();
 
             Cache[assetPath] = sprites;
             return sprites;
+        }
+
+        private static int ExtractTrailingNumber(string name)
+        {
+            if (string.IsNullOrEmpty(name))
+                return int.MaxValue;
+            int i = name.Length - 1;
+            while (i >= 0 && char.IsDigit(name[i]))
+                i--;
+            if (i == name.Length - 1)
+                return int.MaxValue;
+            if (int.TryParse(name.Substring(i + 1), out int n))
+                return n;
+            return int.MaxValue;
         }
 
         public static Sprite[] Slice(Sprite[] source, int start, int count)

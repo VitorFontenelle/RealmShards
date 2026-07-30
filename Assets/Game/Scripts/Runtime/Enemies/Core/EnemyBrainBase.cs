@@ -56,8 +56,8 @@ namespace RealmShards.Enemies
             ScaledDamage = (def != null ? def.AttackDamage : 8f) * damageMul;
             Motor.SetMoveSpeed(def != null ? def.MoveSpeed : 2.4f);
 
-            float retarget = def != null ? def.RetargetInterval : 1.25f;
-            float aggro = def != null ? def.AggroRange : 14f;
+            float retarget = def != null ? def.RetargetInterval : 0.9f;
+            float aggro = def != null ? def.AggroRange : 5.5f;
             TargetSelector = new EnemyTargetSelector(transform, retarget, aggro);
 
             ApplyVisuals();

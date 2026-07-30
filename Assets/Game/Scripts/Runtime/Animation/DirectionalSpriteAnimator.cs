@@ -14,6 +14,7 @@ namespace RealmShards
         [SerializeField] private SpriteRenderer spriteRenderer;
         [SerializeField] private DirectionalAnimationSet animationSet;
         [SerializeField] private FacingDirection8 facing = FacingDirection8.South;
+        [SerializeField] private float targetWorldHeight = 1.8f;
 
         private AnimState _state = AnimState.Idle;
         private float _frameTimer;
@@ -28,6 +29,13 @@ namespace RealmShards
             if (spriteRenderer == null)
             {
                 spriteRenderer = GetComponent<SpriteRenderer>();
+            }
+
+            if (spriteRenderer != null)
+            {
+                spriteRenderer.sortingLayerName = Core.SortingLayers.Characters;
+                if (spriteRenderer.sortingOrder < 8)
+                    spriteRenderer.sortingOrder = 10;
             }
         }
 
@@ -50,6 +58,7 @@ namespace RealmShards
                 }
 
                 spriteRenderer.sprite = animationSet.GetCastFrame(facing, _frameIndex);
+                NormalizeScale();
                 if (_castTimer <= 0f)
                 {
                     _state = AnimState.Idle;
@@ -70,10 +79,31 @@ namespace RealmShards
                 }
 
                 spriteRenderer.sprite = animationSet.GetRunFrame(facing, _frameIndex);
+                NormalizeScale();
                 return;
             }
 
             spriteRenderer.sprite = animationSet.GetIdle(facing);
+            NormalizeScale();
+        }
+
+        public void SetTargetHeight(float height)
+        {
+            targetWorldHeight = Mathf.Max(0.5f, height);
+            NormalizeScale();
+        }
+
+        private void NormalizeScale()
+        {
+            if (spriteRenderer == null || spriteRenderer.sprite == null || targetWorldHeight <= 0.01f)
+                return;
+
+            float h = spriteRenderer.sprite.bounds.size.y;
+            if (h < 0.01f)
+                return;
+
+            float s = targetWorldHeight / h;
+            transform.localScale = new Vector3(s, s, 1f);
         }
 
         public void SetAnimationSet(DirectionalAnimationSet set)

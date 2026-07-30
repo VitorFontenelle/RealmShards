@@ -21,6 +21,9 @@ namespace RealmShards.Enemies
                 muzzle = go.transform;
             }
             ProjectilePool.Warm(12);
+            var catalog = Core.RuntimeContentCatalog.Get();
+            if (catalog != null && catalog.ArrowSprite != null)
+                ProjectilePool.Warm(0, catalog.ArrowSprite);
         }
 
         protected override void OnEnterState(EnemyFsmState state)

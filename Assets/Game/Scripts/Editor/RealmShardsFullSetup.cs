@@ -36,9 +36,12 @@ namespace RealmShards.Editor
                 Debug.Log("[RealmShards] FullSetup: Setup Magic Schools...");
                 RealmShardsMagicContentBuilder.BuildMenu();
 
+                Debug.Log("[RealmShards] FullSetup: Setup Runtime Content Catalog...");
+                RuntimeContentCatalogBuilder.Build();
+
                 AssetDatabase.SaveAssets();
                 AssetDatabase.Refresh();
-                Debug.Log("[RealmShards] FullSetup: all four setups completed successfully.");
+                Debug.Log("[RealmShards] FullSetup: all setups completed successfully.");
             }
             catch (Exception ex)
             {

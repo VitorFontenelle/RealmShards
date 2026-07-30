@@ -39,8 +39,25 @@ namespace RealmShards.Enemies
             _alive = true;
 
             _sr.sprite = sprite;
-            _sr.color = color;
+            // Real arrow art should keep its palette; only tint placeholder squares.
+            bool placeholder = sprite == null || sprite.texture == null ||
+                               (sprite.texture.width <= 16 && sprite.texture.height <= 16 && sprite.rect.width <= 16);
+            _sr.color = placeholder ? color : Color.white;
             _sr.sortingLayerName = Core.SortingLayers.SkillEffectsFront;
+
+            // Normalize arrow size — sheet frames vary widely.
+            if (sprite != null && !placeholder)
+            {
+                float len = Mathf.Max(sprite.bounds.size.x, sprite.bounds.size.y);
+                float target = 0.55f;
+                float s = len > 0.01f ? target / len : 1f;
+                transform.localScale = new Vector3(s, s, 1f);
+            }
+            else
+            {
+                transform.localScale = Vector3.one;
+            }
+
             float angle = Mathf.Atan2(_dir.y, _dir.x) * Mathf.Rad2Deg;
             transform.rotation = Quaternion.Euler(0f, 0f, angle);
             gameObject.SetActive(true);

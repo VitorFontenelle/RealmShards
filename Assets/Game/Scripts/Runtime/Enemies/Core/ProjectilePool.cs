@@ -14,6 +14,12 @@ namespace RealmShards.Enemies
             EnsureRoot();
             if (bulletSprite != null)
                 _bulletSprite = bulletSprite;
+            else if (_bulletSprite == null)
+            {
+                var catalog = Core.RuntimeContentCatalog.Get();
+                if (catalog != null && catalog.ArrowSprite != null)
+                    _bulletSprite = catalog.ArrowSprite;
+            }
 
             for (int i = 0; i < count; i++)
                 Pool.Push(CreateNew());
@@ -53,7 +59,13 @@ namespace RealmShards.Enemies
             _root = go.transform;
 
             if (_bulletSprite == null)
-                _bulletSprite = CreateBulletSprite();
+            {
+                var catalog = Core.RuntimeContentCatalog.Get();
+                if (catalog != null && catalog.ArrowSprite != null)
+                    _bulletSprite = catalog.ArrowSprite;
+                else
+                    _bulletSprite = CreateBulletSprite();
+            }
         }
 
         private static EnemyProjectile CreateNew()

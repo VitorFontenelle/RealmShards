@@ -16,7 +16,7 @@ MonoBehaviour:
   archetype: 2
   maxHealth: 160
   moveSpeed: 2
-  aggroRange: 14
+  aggroRange: 6
   attackRange: 1.5
   attackDamage: 14
   telegraphDuration: 0.55
@@ -27,7 +27,7 @@ MonoBehaviour:
   preferredDistance: 0
   projectileSpeed: 8
   projectileLifetime: 3
-  retargetInterval: 1.25
+  retargetInterval: 0.8
   tint: {r: 0.75, g: 0.45, b: 1, a: 1}
   spritesheetAssetPath: Assets/Characters/Enemies/knight-spritesheet.png
   walkFrameStart: 0

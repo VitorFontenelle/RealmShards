@@ -1,5 +1,5 @@
 using System;
-using System.Collections;
+using System.Collections.Generic;
 using RealmShards.Core;
 using RealmShards.Enemies;
 using RealmShards.Runs;
@@ -8,28 +8,28 @@ using UnityEngine;
 namespace RealmShards.Rooms
 {
     /// <summary>
-    /// Chains trash rooms then champion within a single CityRun scene load.
-    /// First room clear must NOT end the world run — only city completion does.
+    /// Spawns trash/champion encounters across physical dungeon rooms.
+    /// Rooms are explored freely; each room's enemies live until cleared.
     /// </summary>
     public sealed class CityRunDirector : MonoBehaviour
     {
-        [SerializeField] private float interRoomDelay = 1.25f;
         [SerializeField] private EncounterDefinition trashEncounter;
         [SerializeField] private EncounterDefinition championEncounter;
         [SerializeField] private CoopScalingConfig coopScaling;
 
         private World.ArenaBuilder.ArenaResult _arena;
-        private EncounterRoom _room;
         private CityRoomPlanner.Plan _plan;
-        private int _roomIndex;
+        private readonly List<EncounterRoom> _rooms = new List<EncounterRoom>(6);
+        private readonly HashSet<int> _cleared = new HashSet<int>();
         private bool _cityDone;
-        private Coroutine _advanceRoutine;
+        private int _activeRoomIndex;
 
-        public int RoomIndex => _roomIndex;
+        public int RoomIndex => _activeRoomIndex;
         public int TotalRooms => _plan.TotalRooms;
-        public bool IsChampionRoom => _plan.IsChampionRoom(_roomIndex);
+        public bool IsChampionRoom => _plan.IsChampionRoom(_activeRoomIndex);
         public bool IsCityComplete => _cityDone;
-        public EncounterRoom ActiveRoom => _room;
+        public EncounterRoom ActiveRoom =>
+            _activeRoomIndex >= 0 && _activeRoomIndex < _rooms.Count ? _rooms[_activeRoomIndex] : null;
 
         public event Action<int, int> RoomStarted;
         public event Action<int, int> RoomCleared;
@@ -54,90 +54,162 @@ namespace RealmShards.Rooms
             int node = session?.WorldNodeIndex ?? 0;
             bool capital = session?.IsCapitalNode == true;
             _plan = CityRoomPlanner.Build(seed, node, capital);
-            _roomIndex = Mathf.Clamp(session?.RoomIndex ?? 0, 0, _plan.TotalRooms - 1);
             _cityDone = false;
-            StartRoom(_roomIndex);
+            _cleared.Clear();
+            _activeRoomIndex = 0;
+
+            SpawnAllRoomEncounters();
+            RoomStarted?.Invoke(0, _plan.TotalRooms);
         }
 
-        private void StartRoom(int index)
+        private void SpawnAllRoomEncounters()
         {
-            _roomIndex = index;
-            if (GameContext.Instance?.RunSession != null)
-                GameContext.Instance.RunSession.RoomIndex = index;
-
-            if (_room != null)
+            for (int i = 0; i < _rooms.Count; i++)
             {
-                _room.Cleared -= OnRoomCleared;
-                Destroy(_room.gameObject);
-                _room = null;
+                if (_rooms[i] != null)
+                    Destroy(_rooms[i].gameObject);
+            }
+            _rooms.Clear();
+
+            int physicalRooms = _arena.Map != null ? _arena.Map.Rooms.Count : 1;
+            int count = Mathf.Max(1, Mathf.Min(_plan.TotalRooms, physicalRooms));
+
+            for (int i = 0; i < count; i++)
+            {
+                bool champion = _plan.IsChampionRoom(i);
+                EncounterDefinition def = champion
+                    ? (championEncounter != null ? championEncounter : BuildRuntimeChampionEncounter())
+                    : (trashEncounter != null ? trashEncounter : BuildRuntimeTrashEncounter(i));
+
+                var runtime = ScriptableObject.CreateInstance<EncounterDefinition>();
+                if (champion)
+                {
+                    runtime.SetRuntime(
+                        def != null ? def.EncounterId : "city-champion",
+                        def != null ? CopySpawns(def) : LightTrashSpawns(),
+                        ResolveChampionEnemy(def),
+                        true,
+                        "city-champion-clear");
+                }
+                else
+                {
+                    runtime.SetRuntime(
+                        def != null ? def.EncounterId : $"city-trash-{i}",
+                        def != null ? CopySpawns(def) : DefaultTrashSpawns(i),
+                        null,
+                        false,
+                        $"city-trash-{i}");
+                }
+
+                var scaling = coopScaling != null
+                    ? coopScaling
+                    : ScriptableObject.CreateInstance<CoopScalingConfig>();
+
+                CollectSpawnsForRoom(i, out var enemySpawns, out var champSpawns);
+
+                var go = new GameObject($"EncounterRoom_{i}");
+                go.transform.SetParent(transform);
+                var room = go.AddComponent<EncounterRoom>();
+                room.Configure(runtime, scaling, _arena.Bounds, enemySpawns, champSpawns);
+                room.SetExitBlockers(_arena.ExitBlockers);
+                int captured = i;
+                room.Cleared += r => OnRoomClearedIndex(captured, r);
+                room.BeginEncounter();
+                _rooms.Add(room);
             }
 
-            var go = new GameObject($"EncounterRoom_{index}");
-            go.transform.SetParent(transform);
-            _room = go.AddComponent<EncounterRoom>();
-
-            bool champion = _plan.IsChampionRoom(index);
-            EncounterDefinition def = champion
-                ? (championEncounter != null ? championEncounter : BuildRuntimeChampionEncounter())
-                : (trashEncounter != null ? trashEncounter : BuildRuntimeTrashEncounter(index));
-
-            // Ensure trash never spawns champion; champion room always does.
-            var runtime = ScriptableObject.CreateInstance<EncounterDefinition>();
-            if (champion)
-            {
-                runtime.SetRuntime(
-                    def != null ? def.EncounterId : "city-champion",
-                    def != null ? CopySpawns(def) : LightTrashSpawns(),
-                    ResolveChampionEnemy(def),
-                    true,
-                    "city-champion-clear");
-            }
-            else
-            {
-                runtime.SetRuntime(
-                    def != null ? def.EncounterId : $"city-trash-{index}",
-                    def != null ? CopySpawns(def) : DefaultTrashSpawns(index),
-                    null,
-                    false,
-                    $"city-trash-{index}");
-            }
-
-            var scaling = coopScaling != null
-                ? coopScaling
-                : ScriptableObject.CreateInstance<CoopScalingConfig>();
-
-            _room.Configure(runtime, scaling, _arena.Bounds, _arena.EnemySpawns, _arena.ChampionSpawns);
-            _room.SetExitBlockers(_arena.ExitBlockers);
-            _room.Cleared += OnRoomCleared;
-            _room.BeginEncounter();
-            RoomStarted?.Invoke(_roomIndex, _plan.TotalRooms);
-            Debug.Log($"[CityRunDirector] Room {_roomIndex + 1}/{_plan.TotalRooms} ({(champion ? "champion" : "trash")})");
+            Debug.Log($"[CityRunDirector] Spawned {count} physical room encounters.");
         }
 
-        private void OnRoomCleared(EncounterRoom room)
+        private void CollectSpawnsForRoom(int roomIndex, out List<SpawnPoint> enemies, out List<SpawnPoint> champions)
         {
-            RoomCleared?.Invoke(_roomIndex, _plan.TotalRooms);
+            enemies = new List<SpawnPoint>();
+            champions = new List<SpawnPoint>();
 
-            if (_plan.IsFinalRoom(_roomIndex))
+            if (_arena.Map != null && roomIndex < _arena.Map.Rooms.Count)
             {
-                CompleteCity();
+                var info = _arena.Map.Rooms[roomIndex];
+                if (_arena.EnemySpawns != null)
+                {
+                    string prefix = $"EnemySpawn_R{roomIndex}_";
+                    for (int i = 0; i < _arena.EnemySpawns.Count; i++)
+                    {
+                        var sp = _arena.EnemySpawns[i];
+                        if (sp != null && sp.gameObject.name.StartsWith(prefix, StringComparison.Ordinal))
+                            enemies.Add(sp);
+                    }
+                }
+
+                if (enemies.Count == 0)
+                {
+                    for (int e = 0; e < info.EnemySpawns.Count; e++)
+                    {
+                        var go = new GameObject($"RuntimeEnemySpawn_R{roomIndex}_{e}");
+                        go.transform.SetParent(transform);
+                        go.transform.position = info.EnemySpawns[e];
+                        var sp = go.AddComponent<SpawnPoint>();
+                        sp.Configure(SpawnPointKind.Enemy, go.name);
+                        enemies.Add(sp);
+                    }
+                }
+
+                if (info.IsChampion && _arena.ChampionSpawns != null && _arena.ChampionSpawns.Count > 0)
+                    champions.AddRange(_arena.ChampionSpawns);
+                else if (info.IsChampion)
+                {
+                    var go = new GameObject($"RuntimeChampionSpawn_R{roomIndex}");
+                    go.transform.SetParent(transform);
+                    go.transform.position = info.ChampionSpawn;
+                    var sp = go.AddComponent<SpawnPoint>();
+                    sp.Configure(SpawnPointKind.Champion, go.name);
+                    champions.Add(sp);
+                }
+
                 return;
             }
 
-            if (_advanceRoutine != null)
-                StopCoroutine(_advanceRoutine);
-            _advanceRoutine = StartCoroutine(AdvanceAfterDelay());
+            if (_arena.EnemySpawns != null)
+                enemies.AddRange(_arena.EnemySpawns);
+            if (_arena.ChampionSpawns != null)
+                champions.AddRange(_arena.ChampionSpawns);
         }
 
-        private IEnumerator AdvanceAfterDelay()
+        private void OnRoomClearedIndex(int index, EncounterRoom room)
         {
-            yield return new WaitForSecondsRealtime(interRoomDelay);
-            // Prefer scaled time once pause is cleared; fall back if timeScale 0.
-            if (Time.timeScale > 0.01f)
-                yield return new WaitForSeconds(0.15f);
+            _cleared.Add(index);
+            _activeRoomIndex = index;
+            RoomCleared?.Invoke(index, _plan.TotalRooms);
 
-            StartRoom(_roomIndex + 1);
-            _advanceRoutine = null;
+            if (_cleared.Count >= _rooms.Count)
+                CompleteCity();
+            else
+            {
+                for (int i = 0; i < _rooms.Count; i++)
+                {
+                    if (!_cleared.Contains(i))
+                    {
+                        _activeRoomIndex = i;
+                        RoomStarted?.Invoke(_activeRoomIndex, _plan.TotalRooms);
+                        break;
+                    }
+                }
+            }
+        }
+
+        private void Update()
+        {
+            if (_arena.Map == null || _cityDone)
+                return;
+
+            var players = PlayerTargetRegistry.Collect();
+            for (int i = 0; i < players.Count; i++)
+            {
+                if (players[i] == null || !players[i].IsAlive || players[i].Transform == null)
+                    continue;
+                var room = _arena.Map.FindRoomAt(players[i].Transform.position);
+                if (room != null)
+                    _activeRoomIndex = room.Index;
+            }
         }
 
         private void CompleteCity()
@@ -216,12 +288,6 @@ namespace RealmShards.Rooms
             var e = ScriptableObject.CreateInstance<EncounterDefinition>();
             e.SetRuntime("runtime-champion", LightTrashSpawns(), null, true, "champion");
             return e;
-        }
-
-        private void OnDestroy()
-        {
-            if (_room != null)
-                _room.Cleared -= OnRoomCleared;
         }
     }
 }

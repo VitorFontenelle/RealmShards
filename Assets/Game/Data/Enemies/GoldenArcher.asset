@@ -16,7 +16,7 @@ MonoBehaviour:
   archetype: 1
   maxHealth: 28
   moveSpeed: 2.1
-  aggroRange: 14
+  aggroRange: 6.5
   attackRange: 9
   attackDamage: 7
   telegraphDuration: 0.55
@@ -27,7 +27,7 @@ MonoBehaviour:
   preferredDistance: 5.5
   projectileSpeed: 8
   projectileLifetime: 3
-  retargetInterval: 1.25
+  retargetInterval: 0.9
   tint: {r: 1, g: 0.82, b: 0.25, a: 1}
   spritesheetAssetPath: Assets/Characters/Enemies/archer-spritesheet.png
   walkFrameStart: 0

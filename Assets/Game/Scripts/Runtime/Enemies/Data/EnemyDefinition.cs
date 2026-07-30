@@ -16,7 +16,7 @@ namespace RealmShards.Enemies
         [SerializeField] private EnemyArchetype archetype = EnemyArchetype.Warrior;
         [SerializeField] private float maxHealth = 40f;
         [SerializeField] private float moveSpeed = 2.4f;
-        [SerializeField] private float aggroRange = 14f;
+        [SerializeField] private float aggroRange = 5.5f;
         [SerializeField] private float attackRange = 1.35f;
         [SerializeField] private float attackDamage = 8f;
         [SerializeField] private float telegraphDuration = 0.45f;
@@ -100,6 +100,12 @@ namespace RealmShards.Enemies
             attackCooldown = cooldown;
             telegraphDuration = telegraph;
             hitboxRadius = hitRadius;
+        }
+
+        public void ConfigureAggro(float aggro, float retarget = 0.9f)
+        {
+            aggroRange = Mathf.Max(1.5f, aggro);
+            retargetInterval = Mathf.Max(0.2f, retarget);
         }
     }
 }

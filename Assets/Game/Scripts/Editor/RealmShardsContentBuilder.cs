@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using RealmShards.Core;
 using UnityEditor;
 using UnityEditor.SceneManagement;
 using UnityEngine;
@@ -73,6 +74,7 @@ namespace RealmShards.Editor
 
             AssetDatabase.SaveAssets();
             AssetDatabase.Refresh();
+            RuntimeContentCatalogBuilder.Build();
             File.WriteAllText(MarkerPath, System.DateTime.UtcNow.ToString("O"));
             Debug.Log("[RealmShards] Player content setup complete. Prefab: " + PlayerPrefabPath);
             _ = force;
@@ -408,6 +410,7 @@ namespace RealmShards.Editor
             visual.transform.SetParent(root.transform, false);
             var sr = visual.AddComponent<SpriteRenderer>();
             sr.sharedMaterial = material;
+            sr.sortingLayerName = SortingLayers.Characters;
             sr.sortingOrder = 10;
             if (animSet != null && animSet.IdleSprite != null)
             {
@@ -420,6 +423,7 @@ namespace RealmShards.Editor
             ring.transform.localScale = new Vector3(0.55f, 0.22f, 1f);
             var ringSr = ring.AddComponent<SpriteRenderer>();
             ringSr.sprite = AssetDatabase.GetBuiltinExtraResource<Sprite>("UI/Skin/Knob.psd");
+            ringSr.sortingLayerName = SortingLayers.Characters;
             ringSr.sortingOrder = 9;
             ringSr.color = new Color(0.72f, 0.45f, 0.95f, 0.7f);
 

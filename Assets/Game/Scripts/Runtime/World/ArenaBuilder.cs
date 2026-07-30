@@ -20,10 +20,19 @@ namespace RealmShards.World
             public System.Collections.Generic.List<SpawnPoint> EnemySpawns;
             public System.Collections.Generic.List<SpawnPoint> ChampionSpawns;
             public Transform[] ExitBlockers;
+            public DungeonMap Map;
+            public ExplorationFog Exploration;
+        }
+
+        /// <summary>Builds a procedural rooms-and-connectors dungeon (preferred CityRun layout).</summary>
+        public static ArenaResult BuildProcedural(int seed, int roomCount, Transform parent = null)
+        {
+            return DungeonBuilder.Build(seed, roomCount, parent);
         }
 
         public static ArenaResult Build(Vector2 roomSize, Transform parent = null)
         {
+            // Legacy rectangular arena kept for tests / fallbacks.
             var root = new GameObject("Arena");
             if (parent != null)
                 root.transform.SetParent(parent);
@@ -64,16 +73,20 @@ namespace RealmShards.World
                 PlayerSpawn = playerSpawn.transform,
                 EnemySpawns = enemySpawns,
                 ChampionSpawns = champSpawns,
-                ExitBlockers = blockers
+                ExitBlockers = blockers,
+                Map = null,
+                Exploration = null
             };
         }
+
+        public static Sprite LoadFloorSpritePublic() => LoadFloorSprite();
 
         private static void BuildFloor(Transform parent, Vector2 roomSize)
         {
             var floorRoot = new GameObject("Floor");
             floorRoot.transform.SetParent(parent);
 
-            Sprite tile = LoadFloorSprite(FloorTileGeneratedPath) ?? LoadFloorSprite(FloorTilePath);
+            Sprite tile = LoadFloorSprite();
             if (tile == null)
                 tile = Enemies.EnemySpriteLoader.CreatePlaceholder(new Color(0.35f, 0.32f, 0.28f), 64);
 
@@ -100,25 +113,37 @@ namespace RealmShards.World
                 sr.sprite = tile;
                 sr.sortingLayerName = SortingLayers.Ground;
                 sr.sortingOrder = -20;
-                sr.color = new Color(0.85f, 0.82f, 0.75f, 1f);
+                sr.color = Color.white;
             }
         }
 
-        private static Sprite LoadFloorSprite(string path)
+        private static Sprite LoadFloorSprite()
         {
+            var catalog = RuntimeContentCatalog.Get();
+            if (catalog != null && catalog.FloorTile != null)
+                return catalog.FloorTile;
+
 #if UNITY_EDITOR
-            var assets = UnityEditor.AssetDatabase.LoadAllAssetsAtPath(path);
-            if (assets != null)
-            {
-                for (int i = 0; i < assets.Length; i++)
-                {
-                    if (assets[i] is Sprite s)
-                        return s;
-                }
-            }
+            return LoadFloorSpriteEditor(FloorTileGeneratedPath) ?? LoadFloorSpriteEditor(FloorTilePath);
+#else
+            return null;
 #endif
+        }
+
+#if UNITY_EDITOR
+        private static Sprite LoadFloorSpriteEditor(string path)
+        {
+            var assets = UnityEditor.AssetDatabase.LoadAllAssetsAtPath(path);
+            if (assets == null)
+                return null;
+            for (int i = 0; i < assets.Length; i++)
+            {
+                if (assets[i] is Sprite s)
+                    return s;
+            }
             return null;
         }
+#endif
 
         private static Transform[] BuildWalls(Transform parent, Vector2 roomSize)
         {

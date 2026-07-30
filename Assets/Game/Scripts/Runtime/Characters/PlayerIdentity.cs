@@ -45,6 +45,10 @@ namespace RealmShards
         {
             if (bodyRenderer != null)
             {
+                bodyRenderer.sortingLayerName = Core.SortingLayers.Characters;
+                if (bodyRenderer.sortingOrder < 8)
+                    bodyRenderer.sortingOrder = 10;
+
                 if (useMaterialPropertyBlock)
                 {
                     _mpb ??= new MaterialPropertyBlock();
@@ -65,6 +69,7 @@ namespace RealmShards
 
             if (ringRenderer != null)
             {
+                ringRenderer.sortingLayerName = Core.SortingLayers.Characters;
                 var c = playerColor;
                 c.a = 0.75f;
                 ringRenderer.color = c;

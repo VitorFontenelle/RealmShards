@@ -88,16 +88,19 @@ namespace RealmShards.EditorTools
             var warrior = LoadOrCreate<EnemyDefinition>("Assets/Game/Data/Enemies/GoldenAxeWarrior.asset");
             warrior.ApplyRuntimeDefaults("Golden Axe Warrior", EnemyArchetype.Warrior, 45f, 2.5f, EnemyFactory.KnightSheet, new Color(1f, 0.78f, 0.2f));
             warrior.ConfigureCombat(0, 6, 20, 6, 1.35f, 0f, 10f, 1.1f, 0.45f);
+            warrior.ConfigureAggro(5.25f, 0.85f);
             EditorUtility.SetDirty(warrior);
 
             var archer = LoadOrCreate<EnemyDefinition>("Assets/Game/Data/Enemies/GoldenArcher.asset");
             archer.ApplyRuntimeDefaults("Golden Archer", EnemyArchetype.Archer, 28f, 2.1f, EnemyFactory.ArcherSheet, new Color(1f, 0.82f, 0.25f));
             archer.ConfigureCombat(0, 6, 24, 6, 9f, 5.5f, 7f, 1.4f, 0.55f);
+            archer.ConfigureAggro(6.5f, 0.9f);
             EditorUtility.SetDirty(archer);
 
             var champion = LoadOrCreate<EnemyDefinition>("Assets/Game/Data/Enemies/ArcaneCoreChampion.asset");
             champion.ApplyRuntimeDefaults("Arcane Core Champion", EnemyArchetype.Champion, 160f, 2.0f, EnemyFactory.KnightSheet, new Color(0.75f, 0.45f, 1f));
             champion.ConfigureCombat(0, 6, 20, 6, 1.5f, 0f, 14f, 1.0f, 0.55f, 1.1f);
+            champion.ConfigureAggro(6f, 0.8f);
             EditorUtility.SetDirty(champion);
 
             var champDef = LoadOrCreate<ChampionDefinition>("Assets/Game/Data/Champions/ArcaneCoreChampion.asset");
@@ -107,6 +110,7 @@ namespace RealmShards.EditorTools
             var gildedEnemy = LoadOrCreate<EnemyDefinition>("Assets/Game/Data/Enemies/GildedCoreSentinel.asset");
             gildedEnemy.ApplyRuntimeDefaults("Gilded Core Sentinel", EnemyArchetype.Champion, 185f, 2.05f, EnemyFactory.KnightSheet, new Color(1f, 0.82f, 0.35f));
             gildedEnemy.ConfigureCombat(0, 6, 20, 6, 1.55f, 0f, 16f, 0.95f, 0.5f, 1.15f);
+            gildedEnemy.ConfigureAggro(6.25f, 0.8f);
             EditorUtility.SetDirty(gildedEnemy);
             var gildedChamp = LoadOrCreate<ChampionDefinition>("Assets/Game/Data/Champions/GildedCoreSentinel.asset");
             gildedChamp.ConfigureRuntime("champion.gilded_sentinel", "Gilded Core Sentinel", gildedEnemy, true, 10, 19, 1.2f);
@@ -115,6 +119,7 @@ namespace RealmShards.EditorTools
             var ashenEnemy = LoadOrCreate<EnemyDefinition>("Assets/Game/Data/Enemies/AshenCoreWarden.asset");
             ashenEnemy.ApplyRuntimeDefaults("Ashen Core Warden", EnemyArchetype.Champion, 210f, 2.1f, EnemyFactory.KnightSheet, new Color(0.85f, 0.35f, 0.25f));
             ashenEnemy.ConfigureCombat(0, 6, 20, 6, 1.6f, 0f, 18f, 0.9f, 0.48f, 1.2f);
+            ashenEnemy.ConfigureAggro(6.5f, 0.75f);
             EditorUtility.SetDirty(ashenEnemy);
             var ashenChamp = LoadOrCreate<ChampionDefinition>("Assets/Game/Data/Champions/AshenCoreWarden.asset");
             ashenChamp.ConfigureRuntime("champion.ashen_warden", "Ashen Core Warden", ashenEnemy, true, 20, 9999, 1.4f);
