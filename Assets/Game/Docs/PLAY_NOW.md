@@ -1,44 +1,53 @@
-# RealmShards — Play Now (Stage 2)
+# RealmShards — Play Now
 
-Exact path to a playable Hub → CityRun fight.
+Unity **6000.5.6f1** · URP 2D · local co-op (Deck + desktop).
 
-## Prerequisites
+## Setup menus (run once / after pull)
 
-- Unity **6000.5.6f1** (see `ProjectSettings/ProjectVersion.txt`)
-- Open this project folder in the Unity Hub / Editor
+1. **RealmShards → Setup Player Content**
+2. **RealmShards → Setup CityRun Stage 2**
+3. **RealmShards → Setup Items Content**
+4. **RealmShards → Setup Magic Schools**
 
-## Steps
+Then open `Assets/Game/Scenes/Bootstrap.unity` → Play.
 
-1. Open the project and **wait until scripts finish compiling** (bottom-right progress / Console clear of compile errors).
-2. In the menu bar run **both** setup commands (order does not matter; safe to re-run):
-   - **RealmShards → Setup Player Content**  
-     Creates `Assets/Game/Prefabs/Characters/Player.prefab`, abilities, projectiles, Magus anim set, input actions wiring.
-   - **RealmShards → Setup CityRun Stage 2**  
-     Creates enemy/encounter ScriptableObjects and wires them onto `CityRunBootstrap` in `CityRun.unity`.
-3. Open **`Assets/Game/Scenes/Bootstrap.unity`**.
-4. Press **Play**.
+## Loop
 
-## Expected flow
+1. **Bootstrap** → load save → **Hub**
+2. Hub lobby: **Space / A** join (KBM and/or pads), cycle loadout slots, set cities-before-capital, optional **Controls** rebind
+3. **Start Run** → procedural city nodes → capital last
+4. **CityRun** combat → champion drops **Arcane Core** (spend Vestiges) → next city or finish
+5. **RunResults** → Hub
 
-1. **Bootstrap** loads save → switches to **Hub**
-2. Hub: **Start** → lobby → **Start Run**
-3. **CityRun**: arena + Magus player + warriors/archers/champion
-4. Clear the room (or use HUD **End: Win / End: Fail**) → **RunResults** → back toward Hub meta loop
+## Controls quick ref
 
-## Controls (after Setup Player Content)
+See [INPUT.md](INPUT.md) for Deck vs desktop defaults and rebinding.
 
-| Input | Action |
-|--------|--------|
-| WASD / Left stick | Move |
-| Mouse / Right stick | Aim |
-| Basic ability / Ability 1–3 / Dash | As bound in `RealmShards.inputactions` |
-| Space / J | Only on the blue **placeholder** player if Magus prefab was missing |
+## Mixed 2P test
 
-## Fallback without menus
+1. Hub: join Keyboard with Space (P1 purple)
+2. Connect a gamepad → press A (P2 green)
+3. Start Run — both should spawn with exclusive devices
 
-If you skip the setup menus, CityRun still boots with a blue placeholder player (WASD + Space/J melee) and default enemy wave. Prefer running both menus for Magus abilities and authored encounter data.
+## Colors
 
-## Scenes in Build Settings
+| Player | Robe recolor |
+|--------|----------------|
+| P1 | Purple |
+| P2 | Green |
+| P3 | Yellow |
+| P4 | Red |
 
-Enabled in order: `Bootstrap` → `Hub` → `CityRun` → `RunResults`  
-(`Assets/Game/Scenes/*.unity`, names match `RealmShards.Core.SceneNames`)
+Number label + ground ring remain for accessibility. Shader `RealmShards/SpriteTintRecolor` remaps purple robe pixels only (gold/dark preserved as much as possible).
+
+## Magic schools
+
+| School | Sample spells |
+|--------|----------------|
+| Neutral Arcana | Bolt, Pulse, Blink |
+| Gilded Ward | Gilded Flare (burn), Gilded Smite |
+| Ashen Veil | Ashen Drift, Ashen Cinder (slow) |
+| Tideglass | Tideglass Ripple (slow), Harpoon |
+| Continuum | Continuum Slip, Continuum Echo |
+
+Unlock via Arcane Core UI after champions; equip in Hub loadout when unlocked.
