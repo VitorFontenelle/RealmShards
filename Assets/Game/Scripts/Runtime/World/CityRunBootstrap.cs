@@ -1,15 +1,16 @@
 using RealmShards.CameraSystem;
 using RealmShards.Core;
 using RealmShards.Enemies;
+using RealmShards.Input;
 using RealmShards.Rooms;
 using RealmShards.UI;
 using UnityEngine;
+using UnityEngine.InputSystem;
 
 namespace RealmShards.World
 {
     /// <summary>
-    /// Boots a playable CityRun arena at runtime: floor, walls, camera, player, encounter.
-    /// Implements <see cref="ICityRunReady"/> so Hub meta stub UI is suppressed.
+    /// Boots CityRun: arena, camera, mixed-device players from hub lobby, encounter.
     /// </summary>
     public sealed class CityRunBootstrap : MonoBehaviour, ICityRunReady
     {
@@ -41,7 +42,7 @@ namespace RealmShards.World
 
             SetupCamera();
             if (spawnPlayer)
-                SpawnPlayer();
+                SpawnPlayers();
 
             SetupEncounter();
         }
@@ -70,7 +71,7 @@ namespace RealmShards.World
             shared.Configure(_arena.Bounds, fallback, 5f, 11f);
         }
 
-        private void SpawnPlayer()
+        private void SpawnPlayers()
         {
             GameObject prefab = playerPrefab;
 #if UNITY_EDITOR
@@ -78,18 +79,63 @@ namespace RealmShards.World
                 prefab = UnityEditor.AssetDatabase.LoadAssetAtPath<GameObject>(PlayerPrefabPath);
 #endif
 
-            Vector3 pos = _arena.PlayerSpawn != null ? _arena.PlayerSpawn.position : Vector3.zero;
+            Vector3 basePos = _arena.PlayerSpawn != null ? _arena.PlayerSpawn.position : Vector3.zero;
+            var lobby = GameContext.Instance != null ? GameContext.Instance.Lobby : null;
+            int count = GameContext.Instance?.RunSession?.LocalPlayerCount ?? 1;
+            count = Mathf.Clamp(count, 1, 4);
 
+            bool anyJoined = false;
+            if (lobby != null)
+            {
+                for (int i = 0; i < LocalCoopLobby.MaxPlayers; i++)
+                {
+                    var slot = lobby.GetSlot(i);
+                    if (!slot.Joined) continue;
+                    anyJoined = true;
+                    SpawnOne(prefab, basePos + new Vector3(i * 1.2f, 0f, 0f), i, slot);
+                }
+            }
+
+            if (!anyJoined)
+            {
+                for (int i = 0; i < count; i++)
+                    SpawnOne(prefab, basePos + new Vector3(i * 1.2f, 0f, 0f), i, null);
+            }
+        }
+
+        private void SpawnOne(GameObject prefab, Vector3 pos, int index, LocalCoopLobby.Slot slot)
+        {
             if (prefab != null)
             {
                 var instance = Instantiate(prefab, pos, Quaternion.identity);
-                instance.name = "Player_1";
+                instance.name = $"Player_{index + 1}";
                 try { instance.tag = "Player"; } catch { /* ignore */ }
-                instance.GetComponent<PlayerController>()?.InitializePlayer(0);
+                instance.GetComponent<PlayerController>()?.InitializePlayer(index);
+                LoadoutApplier.ApplyFromSession(instance.GetComponent<AbilityCaster>());
+                if (instance.GetComponent<Magic.StatusEffectHost>() == null)
+                    instance.AddComponent<Magic.StatusEffectHost>();
+
+                var pi = instance.GetComponent<PlayerInput>();
+                if (pi != null && slot != null && slot.PrimaryDevice != null)
+                {
+                    try
+                    {
+                        if (slot.SecondaryDevice != null)
+                            pi.SwitchCurrentControlScheme(slot.SchemeName, slot.PrimaryDevice, slot.SecondaryDevice);
+                        else
+                            pi.SwitchCurrentControlScheme(slot.SchemeName, slot.PrimaryDevice);
+                    }
+                    catch (System.Exception ex)
+                    {
+                        Debug.LogWarning($"[CityRun] Control scheme assign failed: {ex.Message}");
+                    }
+                }
+
                 return;
             }
 
-            CreatePlaceholderPlayer(pos);
+            if (index == 0)
+                CreatePlaceholderPlayer(pos);
         }
 
         private static void CreatePlaceholderPlayer(Vector3 pos)
@@ -141,7 +187,23 @@ namespace RealmShards.World
                 ? coopScalingOverride
                 : ScriptableObject.CreateInstance<CoopScalingConfig>();
 
-            room.Configure(encounterOverride, scaling, _arena.Bounds, _arena.EnemySpawns, _arena.ChampionSpawns);
+            bool capital = GameContext.Instance?.RunSession?.IsCapitalNode == true;
+            EncounterDefinition encounter = encounterOverride;
+            if (capital && encounter == null)
+            {
+                // Capital placeholder: lighter wave, still proves route end.
+                encounter = ScriptableObject.CreateInstance<EncounterDefinition>();
+                encounter.SetRuntime("capital-gate", new[]
+                {
+                    new EncounterDefinition.EnemySpawnEntry
+                    {
+                        archetypeFallback = EnemyArchetype.Warrior,
+                        count = 1
+                    }
+                }, null, true, "capital-clear");
+            }
+
+            room.Configure(encounter, scaling, _arena.Bounds, _arena.EnemySpawns, _arena.ChampionSpawns);
             room.SetExitBlockers(_arena.ExitBlockers);
             room.BeginEncounter();
         }
@@ -158,7 +220,7 @@ namespace RealmShards.World
         private void Update()
         {
             float x = 0f, y = 0f;
-            var kb = UnityEngine.InputSystem.Keyboard.current;
+            var kb = Keyboard.current;
             if (kb != null)
             {
                 if (kb.aKey.isPressed || kb.leftArrowKey.isPressed) x -= 1f;
@@ -168,16 +230,11 @@ namespace RealmShards.World
             }
 
             Vector2 v = new Vector2(x, y);
-            if (v.sqrMagnitude > 1f)
-                v.Normalize();
-            if (_rb != null)
-                _rb.linearVelocity = v * moveSpeed;
+            if (v.sqrMagnitude > 1f) v.Normalize();
+            if (_rb != null) _rb.linearVelocity = v * moveSpeed;
         }
     }
 
-    /// <summary>
-    /// Minimal Space/J melee so CityRun is fightable before Setup Player Content creates Magus prefab.
-    /// </summary>
     public sealed class PlaceholderPlayerAttack : MonoBehaviour
     {
         [SerializeField] private float damage = 14f;
@@ -198,12 +255,9 @@ namespace RealmShards.World
 
         private void Update()
         {
-            var kb = UnityEngine.InputSystem.Keyboard.current;
-            if (kb == null || Time.time < _nextAttackTime)
-                return;
-
-            if (!kb.spaceKey.wasPressedThisFrame && !kb.jKey.wasPressedThisFrame)
-                return;
+            var kb = Keyboard.current;
+            if (kb == null || Time.time < _nextAttackTime) return;
+            if (!kb.spaceKey.wasPressedThisFrame && !kb.jKey.wasPressedThisFrame) return;
 
             _nextAttackTime = Time.time + cooldown;
             Vector2 origin = transform.position;
@@ -211,22 +265,14 @@ namespace RealmShards.World
             for (int i = 0; i < hits.Length; i++)
             {
                 var col = hits[i];
-                if (col == null)
-                    continue;
-
+                if (col == null) continue;
                 var hurtbox = col.GetComponent<Hurtbox>() ?? col.GetComponentInParent<Hurtbox>();
-                IDamageable target = hurtbox != null
-                    ? hurtbox.Health
-                    : col.GetComponentInParent<IDamageable>();
-                if (target == null || !target.IsAlive || target.Faction == FactionId.Player)
-                    continue;
-
+                IDamageable target = hurtbox != null ? hurtbox.Health : col.GetComponentInParent<IDamageable>();
+                if (target == null || !target.IsAlive || target.Faction == FactionId.Player) continue;
                 Vector2 dir = ((Vector2)col.bounds.center - origin).normalized;
                 var info = DamageInfo.Create(damage, dir * knockback, col.ClosestPoint(origin), _faction, gameObject);
-                if (hurtbox != null)
-                    hurtbox.TryReceiveHit(in info);
-                else
-                    target.TryApplyDamage(in info);
+                if (hurtbox != null) hurtbox.TryReceiveHit(in info);
+                else target.TryApplyDamage(in info);
             }
         }
     }

@@ -1,25 +1,30 @@
+using RealmShards.Input;
 using RealmShards.Progression;
 using RealmShards.Runs;
 using RealmShards.Save;
 using UnityEngine;
 using UnityEngine.EventSystems;
+using UnityEngine.InputSystem;
 using UnityEngine.InputSystem.UI;
 using UnityEngine.SceneManagement;
 
 namespace RealmShards.Core
 {
     /// <summary>
-    /// Composition root. Lives in DontDestroyOnLoad. Prefer this over FindObjectOfType in Update.
+    /// Composition root. Lives in DontDestroyOnLoad.
     /// </summary>
     public sealed class GameContext : MonoBehaviour
     {
         public static GameContext Instance { get; private set; }
 
         [SerializeField] private ContentDatabase contentDatabase;
+        [SerializeField] private InputActionAsset inputActions;
 
         private ISaveService _save;
         private ProgressionService _progression;
         private IRunHost _runHost;
+        private BindingOverridesService _bindings;
+        private LocalCoopLobby _lobby;
         private bool _bootstrapped;
 
         public ISaveService Save => _save;
@@ -27,15 +32,14 @@ namespace RealmShards.Core
         public IRunHost Runs => _runHost;
         public RunSession RunSession => _runHost?.Session;
         public ContentDatabase Content => contentDatabase;
+        public InputActionAsset InputActions => inputActions;
+        public BindingOverridesService Bindings => _bindings;
+        public LocalCoopLobby Lobby => _lobby;
 
         [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.BeforeSceneLoad)]
         private static void AutoCreate()
         {
-            if (Instance != null)
-            {
-                return;
-            }
-
+            if (Instance != null) return;
             var go = new GameObject(nameof(GameContext));
             DontDestroyOnLoad(go);
             go.AddComponent<GameContext>();
@@ -52,19 +56,34 @@ namespace RealmShards.Core
             Instance = this;
             DontDestroyOnLoad(gameObject);
 
+            Application.runInBackground = true;
+
             _save = new JsonSaveService();
             _save.LoadOrCreate();
             _progression = new ProgressionService(_save);
             _runHost = new RunHost(_save, _progression);
+            _lobby = new LocalCoopLobby();
+
+            if (inputActions == null)
+            {
+#if UNITY_EDITOR
+                inputActions = UnityEditor.AssetDatabase.LoadAssetAtPath<InputActionAsset>(
+                    "Assets/Game/Settings/RealmShards.inputactions");
+#endif
+                if (inputActions == null)
+                    inputActions = Resources.Load<InputActionAsset>("RealmShards");
+            }
+
+            if (inputActions != null)
+            {
+                _bindings = new BindingOverridesService(inputActions);
+                _bindings.Load();
+            }
 
             if (contentDatabase == null)
-            {
                 contentDatabase = ContentDatabase.CreateRuntimeDefault();
-            }
             else
-            {
                 contentDatabase.RebuildLookup();
-            }
 
             SceneManager.sceneLoaded += OnSceneLoaded;
         }
@@ -78,16 +97,9 @@ namespace RealmShards.Core
             }
         }
 
-        private void Start()
-        {
-            // Handle the scene that was already active when we were created.
-            HandleScene(SceneManager.GetActiveScene());
-        }
+        private void Start() => HandleScene(SceneManager.GetActiveScene());
 
-        private void OnSceneLoaded(Scene scene, LoadSceneMode mode)
-        {
-            HandleScene(scene);
-        }
+        private void OnSceneLoaded(Scene scene, LoadSceneMode mode) => HandleScene(scene);
 
         private void HandleScene(Scene scene)
         {
@@ -106,7 +118,6 @@ namespace RealmShards.Core
                     break;
                 case SceneNames.CityRun:
                     EnsureEventSystem();
-                    // Prefer world bootstrap + meta bridge; stub only if neither exists yet.
                     UI.CityRunMetaBridge.EnsurePresent();
                     UI.CityRunStubScreen.EnsurePresent();
                     break;
@@ -115,28 +126,26 @@ namespace RealmShards.Core
 
         private void RunBootstrap()
         {
-            if (_bootstrapped)
-            {
-                return;
-            }
-
+            if (_bootstrapped) return;
             _bootstrapped = true;
             _save.LoadOrCreate();
-            Debug.Log($"[GameContext] Save loaded. Year={_progression.Year} Decade={_progression.Decade} Vestiges={_progression.ArcaneVestiges} Path={_save.SaveFilePath}");
+            Debug.Log($"[GameContext] Save loaded. Year={_progression.Year} Decade={_progression.Decade} Vestiges={_progression.ArcaneVestiges}");
             SceneManager.LoadScene(SceneNames.Hub);
         }
 
         public static void EnsureEventSystem()
         {
             if (FindFirstObjectByType<EventSystem>() != null)
-            {
                 return;
-            }
 
             var es = new GameObject("EventSystem");
             es.AddComponent<EventSystem>();
-            // Project uses Input System only (activeInputHandler=1).
-            es.AddComponent<InputSystemUIInputModule>();
+            var module = es.AddComponent<InputSystemUIInputModule>();
+            if (Instance != null && Instance.inputActions != null)
+            {
+                // Fall back to module defaults if no UI map — still gamepad-navigable via built-in.
+                module.actionsAsset = Instance.inputActions;
+            }
         }
     }
 }
