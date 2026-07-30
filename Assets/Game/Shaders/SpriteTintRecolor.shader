@@ -4,9 +4,10 @@ Shader "RealmShards/SpriteTintRecolor"
     {
         _MainTex ("Sprite Texture", 2D) = "white" {}
         _Color ("Tint", Color) = (0.72, 0.45, 0.95, 1)
-        _RecolorStrength ("Recolor Strength", Range(0, 1)) = 0.65
+        _RecolorStrength ("Recolor Strength", Range(0, 1)) = 0.85
         _PurpleCenter ("Purple Center", Color) = (0.45, 0.25, 0.7, 1)
-        _PurpleTolerance ("Purple Tolerance", Range(0, 1)) = 0.45
+        _PurpleTolerance ("Purple Tolerance", Range(0, 1)) = 0.42
+        _GoldReject ("Gold Reject Threshold", Range(0, 1)) = 0.35
     }
 
     SubShader
@@ -39,6 +40,7 @@ Shader "RealmShards/SpriteTintRecolor"
             float _RecolorStrength;
             float4 _PurpleCenter;
             float _PurpleTolerance;
+            float _GoldReject;
 
             struct Attributes
             {
@@ -59,7 +61,7 @@ Shader "RealmShards/SpriteTintRecolor"
                 Varyings output;
                 output.positionCS = TransformObjectToHClip(input.positionOS.xyz);
                 output.uv = TRANSFORM_TEX(input.uv, _MainTex);
-                output.color = input.color * _Color;
+                output.color = input.color;
                 return output;
             }
 
@@ -68,14 +70,21 @@ Shader "RealmShards/SpriteTintRecolor"
                 float4 tex = SAMPLE_TEXTURE2D(_MainTex, sampler_MainTex, input.uv);
                 float3 rgb = tex.rgb;
 
-                // Approximate purple robe mask via hue distance in RGB space.
-                float dist = distance(normalize(rgb + 1e-5), normalize(_PurpleCenter.rgb + 1e-5));
-                float mask = saturate(1.0 - dist / max(0.001, _PurpleTolerance));
-                mask *= smoothstep(0.05, 0.2, max(rgb.r, max(rgb.g, rgb.b)));
+                // Reject gold / warm metals (high R+G, low B relative).
+                float warm = saturate((rgb.r + rgb.g) * 0.5 - rgb.b);
+                float goldMask = smoothstep(_GoldReject, _GoldReject + 0.25, warm);
 
-                float luminance = dot(rgb, float3(0.299, 0.587, 0.114));
-                float3 recolored = luminance * _Color.rgb;
-                rgb = lerp(rgb, recolored, mask * _RecolorStrength);
+                // Reject near-black clothing.
+                float luma = dot(rgb, float3(0.299, 0.587, 0.114));
+                float darkReject = smoothstep(0.04, 0.18, luma);
+
+                float dist = distance(normalize(rgb + 1e-5), normalize(_PurpleCenter.rgb + 1e-5));
+                float purpleMask = saturate(1.0 - dist / max(0.001, _PurpleTolerance));
+                purpleMask *= darkReject;
+                purpleMask *= (1.0 - goldMask);
+
+                float3 recolored = luma * _Color.rgb;
+                rgb = lerp(rgb, recolored, purpleMask * _RecolorStrength);
 
                 float4 result = float4(rgb, tex.a) * input.color;
                 result.rgb *= result.a;

@@ -4,12 +4,13 @@ namespace RealmShards
 {
     public sealed class PlayerIdentity : MonoBehaviour
     {
+        /// <summary>P1 purple, P2 green, P3 yellow, P4 red — robe recolor targets.</summary>
         private static readonly Color[] DefaultColors =
         {
-            new Color(0.72f, 0.45f, 0.95f),
-            new Color(0.35f, 0.75f, 0.95f),
-            new Color(0.95f, 0.55f, 0.35f),
-            new Color(0.45f, 0.9f, 0.55f)
+            new Color(0.72f, 0.45f, 0.95f), // purple
+            new Color(0.35f, 0.82f, 0.42f), // green
+            new Color(0.95f, 0.82f, 0.28f), // yellow
+            new Color(0.92f, 0.28f, 0.28f)  // red
         };
 
         [SerializeField] private int playerIndex;
@@ -18,6 +19,8 @@ namespace RealmShards
         [SerializeField] private SpriteRenderer ringRenderer;
         [SerializeField] private TextMesh indicatorLabel;
         [SerializeField] private bool useMaterialPropertyBlock = true;
+        [SerializeField] private float recolorStrength = 0.85f;
+        [SerializeField] private float purpleTolerance = 0.42f;
 
         private MaterialPropertyBlock _mpb;
 
@@ -27,10 +30,7 @@ namespace RealmShards
         private void Awake()
         {
             if (bodyRenderer == null)
-            {
                 bodyRenderer = GetComponentInChildren<SpriteRenderer>();
-            }
-
             ApplyVisuals();
         }
 
@@ -49,22 +49,24 @@ namespace RealmShards
                 {
                     _mpb ??= new MaterialPropertyBlock();
                     bodyRenderer.GetPropertyBlock(_mpb);
+                    // SpriteTintRecolor: only purple-ish robe pixels remap; gold/dark stay.
                     _mpb.SetColor("_Color", playerColor);
-                    // URP/Lit and Sprites/Default use different color props; also set tint fallback.
-                    _mpb.SetColor("_BaseColor", playerColor);
+                    _mpb.SetColor("_BaseColor", Color.white);
+                    _mpb.SetFloat("_RecolorStrength", recolorStrength);
+                    _mpb.SetFloat("_PurpleTolerance", purpleTolerance);
+                    _mpb.SetColor("_PurpleCenter", new Color(0.45f, 0.25f, 0.7f, 1f));
                     bodyRenderer.SetPropertyBlock(_mpb);
                 }
 
-                // Always tint as reliable fallback for default sprite material.
-                var c = playerColor;
-                c.a = bodyRenderer.color.a;
-                bodyRenderer.color = c;
+                // Keep vertex color near-white so shader luminance * tint owns robe hue.
+                var c = bodyRenderer.color;
+                bodyRenderer.color = new Color(1f, 1f, 1f, c.a);
             }
 
             if (ringRenderer != null)
             {
                 var c = playerColor;
-                c.a = 0.7f;
+                c.a = 0.75f;
                 ringRenderer.color = c;
                 ringRenderer.enabled = true;
             }
