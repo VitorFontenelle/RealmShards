@@ -1,0 +1,83 @@
+using System;
+using UnityEngine;
+
+namespace RealmShards.Progression
+{
+    /// <summary>
+    /// Year / decade calendar API for meta progression.
+    /// Failure advances year by +10 (one decade).
+    /// </summary>
+    public sealed class ProgressionService
+    {
+        private readonly Save.ISaveService _save;
+
+        public ProgressionService(Save.ISaveService save)
+        {
+            _save = save ?? throw new ArgumentNullException(nameof(save));
+        }
+
+        public int Year => _save.Current.meta.year;
+        public int Decade => _save.Current.meta.decade;
+        public int ArcaneVestiges => _save.Current.meta.arcaneVestiges;
+
+        public event Action<int, int> YearChanged;
+
+        public void SetYear(int year, bool saveImmediately = true)
+        {
+            var meta = _save.Current.meta;
+            meta.year = Mathf.Max(0, year);
+            meta.decade = meta.year / 10;
+            if (saveImmediately)
+            {
+                _save.Save();
+            }
+
+            YearChanged?.Invoke(meta.year, meta.decade);
+        }
+
+        /// <summary>Advances calendar by one decade (+10 years). Called on run failure.</summary>
+        public void AdvanceDecadeOnFailure(bool saveImmediately = true)
+        {
+            SetYear(Year + 10, saveImmediately);
+        }
+
+        public void AddArcaneVestiges(int amount, bool saveImmediately = true)
+        {
+            if (amount == 0)
+            {
+                return;
+            }
+
+            var meta = _save.Current.meta;
+            meta.arcaneVestiges = Mathf.Max(0, meta.arcaneVestiges + amount);
+            if (saveImmediately)
+            {
+                _save.Save();
+            }
+        }
+
+        public bool IsAbilityUnlocked(string abilityId)
+        {
+            return !string.IsNullOrEmpty(abilityId)
+                   && _save.Current.meta.unlockedAbilityIds.Contains(abilityId);
+        }
+
+        public void UnlockAbility(string abilityId, bool saveImmediately = true)
+        {
+            if (string.IsNullOrEmpty(abilityId))
+            {
+                return;
+            }
+
+            var list = _save.Current.meta.unlockedAbilityIds;
+            if (!list.Contains(abilityId))
+            {
+                list.Add(abilityId);
+                if (saveImmediately)
+                {
+                    _save.Save();
+                }
+            }
+        }
+    }
+}
