@@ -10,6 +10,7 @@ namespace RealmShards.World
     public static class ArenaBuilder
     {
         public const string FloorTilePath = "Assets/Tiles/sample-tile.png";
+        public const string FloorTileGeneratedPath = "Assets/Game/Art/Tiles/Generated/sample-tile_seamed.png";
 
         public struct ArenaResult
         {
@@ -72,21 +73,7 @@ namespace RealmShards.World
             var floorRoot = new GameObject("Floor");
             floorRoot.transform.SetParent(parent);
 
-            Sprite tile = null;
-#if UNITY_EDITOR
-            var assets = UnityEditor.AssetDatabase.LoadAllAssetsAtPath(FloorTilePath);
-            if (assets != null)
-            {
-                for (int i = 0; i < assets.Length; i++)
-                {
-                    if (assets[i] is Sprite s)
-                    {
-                        tile = s;
-                        break;
-                    }
-                }
-            }
-#endif
+            Sprite tile = LoadFloorSprite(FloorTileGeneratedPath) ?? LoadFloorSprite(FloorTilePath);
             if (tile == null)
                 tile = Enemies.EnemySpriteLoader.CreatePlaceholder(new Color(0.35f, 0.32f, 0.28f), 64);
 
@@ -117,19 +104,41 @@ namespace RealmShards.World
             }
         }
 
+        private static Sprite LoadFloorSprite(string path)
+        {
+#if UNITY_EDITOR
+            var assets = UnityEditor.AssetDatabase.LoadAllAssetsAtPath(path);
+            if (assets != null)
+            {
+                for (int i = 0; i < assets.Length; i++)
+                {
+                    if (assets[i] is Sprite s)
+                        return s;
+                }
+            }
+#endif
+            return null;
+        }
+
         private static Transform[] BuildWalls(Transform parent, Vector2 roomSize)
         {
+            // Layered room kit: Floor (visual) / Walls (visual+collision) / ExitBlockers (collision gates).
+            var wallsRoot = new GameObject("Walls");
+            wallsRoot.transform.SetParent(parent);
+            var collisionRoot = new GameObject("Collision");
+            collisionRoot.transform.SetParent(parent);
+
             float thickness = 1f;
             float halfW = roomSize.x * 0.5f;
             float halfH = roomSize.y * 0.5f;
 
-            CreateWall(parent, "Wall_N", new Vector3(0f, halfH + thickness * 0.5f, 0f), new Vector2(roomSize.x + thickness * 2f, thickness));
-            CreateWall(parent, "Wall_S", new Vector3(0f, -halfH - thickness * 0.5f, 0f), new Vector2(roomSize.x + thickness * 2f, thickness));
-            CreateWall(parent, "Wall_W", new Vector3(-halfW - thickness * 0.5f, 0f, 0f), new Vector2(thickness, roomSize.y));
-            CreateWall(parent, "Wall_E", new Vector3(halfW + thickness * 0.5f, 0f, 0f), new Vector2(thickness, roomSize.y));
+            CreateWall(wallsRoot.transform, "Wall_N", new Vector3(0f, halfH + thickness * 0.5f, 0f), new Vector2(roomSize.x + thickness * 2f, thickness));
+            CreateWall(wallsRoot.transform, "Wall_S", new Vector3(0f, -halfH - thickness * 0.5f, 0f), new Vector2(roomSize.x + thickness * 2f, thickness));
+            CreateWall(wallsRoot.transform, "Wall_W", new Vector3(-halfW - thickness * 0.5f, 0f, 0f), new Vector2(thickness, roomSize.y));
+            CreateWall(wallsRoot.transform, "Wall_E", new Vector3(halfW + thickness * 0.5f, 0f, 0f), new Vector2(thickness, roomSize.y));
 
-            var northDoor = CreateWall(parent, "ExitBlock_N", new Vector3(0f, halfH - 0.2f, 0f), new Vector2(3.5f, 0.6f), new Color(0.6f, 0.15f, 0.15f, 0.85f));
-            var southDoor = CreateWall(parent, "ExitBlock_S", new Vector3(0f, -halfH + 0.2f, 0f), new Vector2(3.5f, 0.6f), new Color(0.6f, 0.15f, 0.15f, 0.85f));
+            var northDoor = CreateWall(collisionRoot.transform, "ExitBlock_N", new Vector3(0f, halfH - 0.2f, 0f), new Vector2(3.5f, 0.6f), new Color(0.6f, 0.15f, 0.15f, 0.85f));
+            var southDoor = CreateWall(collisionRoot.transform, "ExitBlock_S", new Vector3(0f, -halfH + 0.2f, 0f), new Vector2(3.5f, 0.6f), new Color(0.6f, 0.15f, 0.15f, 0.85f));
             return new[] { northDoor, southDoor };
         }
 

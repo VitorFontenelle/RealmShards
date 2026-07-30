@@ -40,11 +40,22 @@ namespace RealmShards.World
             if (buildArenaIfMissing)
                 _arena = ArenaBuilder.Build(roomSize, transform);
 
+            if (FindFirstObjectByType<RealmShards.Combat.DamageNumberService>() == null)
+            {
+                var dmg = new GameObject("DamageNumberService");
+                dmg.AddComponent<RealmShards.Combat.DamageNumberService>();
+            }
+
+            _ = RealmShards.Audio.AudioEventHub.Instance;
+
             SetupCamera();
             if (spawnPlayer)
                 SpawnPlayers();
 
             SetupEncounter();
+            CombatHud.EnsurePresent();
+            PauseMenu.EnsurePresent();
+            PlayerLocatePresenter.EnsurePresent();
         }
 
         private void SetupCamera()
@@ -179,33 +190,44 @@ namespace RealmShards.World
 
         private void SetupEncounter()
         {
-            var encounterGo = new GameObject("EncounterRoom");
-            encounterGo.transform.SetParent(transform);
-            var room = encounterGo.AddComponent<EncounterRoom>();
-
             var scaling = coopScalingOverride != null
                 ? coopScalingOverride
                 : ScriptableObject.CreateInstance<CoopScalingConfig>();
 
-            bool capital = GameContext.Instance?.RunSession?.IsCapitalNode == true;
-            EncounterDefinition encounter = encounterOverride;
-            if (capital && encounter == null)
+            EncounterDefinition trash = encounterOverride;
+            EncounterDefinition champion = encounterOverride;
+
+            // Dedicated trash copy without champion when using the sample asset.
+            if (encounterOverride != null)
             {
-                // Capital placeholder: lighter wave, still proves route end.
-                encounter = ScriptableObject.CreateInstance<EncounterDefinition>();
-                encounter.SetRuntime("capital-gate", new[]
+                trash = ScriptableObject.CreateInstance<EncounterDefinition>();
+                var spawns = new EncounterDefinition.EnemySpawnEntry[
+                    encounterOverride.Spawns != null ? encounterOverride.Spawns.Count : 0];
+                if (encounterOverride.Spawns != null)
                 {
-                    new EncounterDefinition.EnemySpawnEntry
+                    for (int i = 0; i < encounterOverride.Spawns.Count; i++)
+                        spawns[i] = encounterOverride.Spawns[i];
+                }
+                trash.SetRuntime(
+                    encounterOverride.EncounterId + "-trash",
+                    spawns.Length > 0 ? spawns : new[]
                     {
-                        archetypeFallback = EnemyArchetype.Warrior,
-                        count = 1
-                    }
-                }, null, true, "capital-clear");
+                        new EncounterDefinition.EnemySpawnEntry
+                        {
+                            archetypeFallback = EnemyArchetype.Warrior,
+                            count = 2
+                        }
+                    },
+                    null,
+                    false,
+                    "trash-clear");
             }
 
-            room.Configure(encounter, scaling, _arena.Bounds, _arena.EnemySpawns, _arena.ChampionSpawns);
-            room.SetExitBlockers(_arena.ExitBlockers);
-            room.BeginEncounter();
+            var directorGo = new GameObject("CityRunDirector");
+            directorGo.transform.SetParent(transform);
+            var director = directorGo.AddComponent<CityRunDirector>();
+            director.Configure(_arena, trash, champion, scaling);
+            director.Begin();
         }
     }
 

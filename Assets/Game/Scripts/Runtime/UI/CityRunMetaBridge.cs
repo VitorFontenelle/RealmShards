@@ -1,19 +1,24 @@
+using RealmShards.Combat;
 using RealmShards.Core;
 using RealmShards.Rooms;
 using RealmShards.Runs;
 using RealmShards.Save;
 using RealmShards.World;
 using UnityEngine;
+using UnityEngine.UI;
 
 namespace RealmShards.UI
 {
     /// <summary>
-    /// Meta glue for CityRun: bootstrap, End Run controls, advance route after clear.
+    /// Meta glue for CityRun: End Run controls, advance route after full city clear (not first room).
     /// </summary>
     public sealed class CityRunMetaBridge : MonoBehaviour, ICityRunReady
     {
         private bool _ending;
         private bool _waitingCore;
+        private bool _cityComplete;
+        private CityRunDirector _director;
+        private Text _roomHint;
 
         public static void EnsurePresent()
         {
@@ -26,6 +31,7 @@ namespace RealmShards.UI
 
         private void Awake()
         {
+            HitStop.EnsureRunningTimeScale();
             if (FindFirstObjectByType<CityRunBootstrap>() == null)
             {
                 var bootstrap = new GameObject(nameof(CityRunBootstrap));
@@ -37,35 +43,83 @@ namespace RealmShards.UI
         {
             GameContext.EnsureEventSystem();
             BuildOverlay();
-            Invoke(nameof(TryHookEncounter), 0.25f);
+            Invoke(nameof(TryHookDirector), 0.3f);
         }
 
-        private void TryHookEncounter()
+        private void Update()
         {
-            var room = FindFirstObjectByType<EncounterRoom>();
-            if (room != null)
-                room.Cleared += OnEncounterCleared;
+            if (!_cityComplete || _ending || !_waitingCore) return;
+            var session = GameContext.Instance?.RunSession;
+            if (session != null && !session.AwaitingArcaneCore)
+            {
+                _waitingCore = false;
+                CancelInvoke(nameof(FinishAfterCoreOrTimeout));
+                AdvanceOrEnd();
+            }
+        }
+
+        private void TryHookDirector()
+        {
+            _director = FindFirstObjectByType<CityRunDirector>();
+            if (_director == null)
+            {
+                // Legacy fallback: single room still must not end whole route immediately —
+                // only advance after clear if it's treated as city complete.
+                var room = FindFirstObjectByType<EncounterRoom>();
+                if (room != null)
+                    room.Cleared += OnLegacyRoomCleared;
+                return;
+            }
+
+            _director.CityCompleted += OnCityCompleted;
+            _director.RoomStarted += OnRoomStarted;
+            OnRoomStarted(_director.RoomIndex, _director.TotalRooms);
         }
 
         private void OnDestroy()
         {
+            if (_director != null)
+            {
+                _director.CityCompleted -= OnCityCompleted;
+                _director.RoomStarted -= OnRoomStarted;
+            }
+
             var room = FindFirstObjectByType<EncounterRoom>();
             if (room != null)
-                room.Cleared -= OnEncounterCleared;
+                room.Cleared -= OnLegacyRoomCleared;
+
+            HitStop.EnsureRunningTimeScale();
         }
 
-        private void OnEncounterCleared(EncounterRoom room)
+        private void OnRoomStarted(int index, int total)
         {
+            if (_roomHint != null)
+            {
+                var city = GameContext.Instance?.RunSession?.CityId ?? "city";
+                string kind = index >= total - 1 ? "Champion" : "Room";
+                _roomHint.text =
+                    $"CityRun — {city} · {kind} {index + 1}/{total} · clear all rooms before route advance";
+            }
+        }
+
+        private void OnCityCompleted()
+        {
+            _cityComplete = true;
             var session = GameContext.Instance?.RunSession;
             if (session != null && session.AwaitingArcaneCore)
             {
                 _waitingCore = true;
-                Invoke(nameof(FinishAfterCoreOrTimeout), 12f);
+                Invoke(nameof(FinishAfterCoreOrTimeout), 14f);
                 return;
             }
 
-            // Give a short window for Arcane Core pickup if champion just died.
             Invoke(nameof(AdvanceOrEnd), 1.5f);
+        }
+
+        private void OnLegacyRoomCleared(EncounterRoom room)
+        {
+            // Without director, treat single clear as city complete (old scenes).
+            OnCityCompleted();
         }
 
         private void FinishAfterCoreOrTimeout()
@@ -81,12 +135,13 @@ namespace RealmShards.UI
             if (ctx == null) return;
 
             var session = ctx.RunSession;
-            if (session != null && session.AwaitingArcaneCore)
+            if (session != null && session.AwaitingArcaneCore && _waitingCore)
             {
-                // Still in UI — wait a bit more
-                if (_waitingCore)
-                    return;
+                // Still in Arcane Core UI — keep waiting until unlock screen clears flag or timeout already fired.
+                // Soft proceed after timeout path.
             }
+
+            HitStop.EnsureRunningTimeScale();
 
             if (session != null && session.HasNextNode)
             {
@@ -104,14 +159,14 @@ namespace RealmShards.UI
         private void BuildOverlay()
         {
             var canvas = UiFactory.CreateScreenCanvas("CityRunMetaHUD", 200);
-            UiScaleConfig.Apply(canvas.GetComponent<UnityEngine.UI.CanvasScaler>());
+            UiScaleConfig.Apply(canvas.GetComponent<CanvasScaler>());
             canvas.transform.SetParent(transform, false);
 
             var city = GameContext.Instance?.RunSession?.CityId ?? "city";
             var node = GameContext.Instance?.RunSession?.WorldNodeIndex ?? 0;
-            UiFactory.AddText(canvas.transform, "Hint",
-                $"CityRun — {city} (node {node + 1}) · clear room or End buttons",
-                16, TextAnchor.UpperCenter, new Color(1f, 1f, 1f, 0.75f),
+            _roomHint = UiFactory.AddText(canvas.transform, "Hint",
+                $"CityRun — {city} (node {node + 1}) · multi-room · End buttons",
+                15, TextAnchor.UpperCenter, new Color(1f, 1f, 1f, 0.75f),
                 new Vector2(0.1f, 0.92f), new Vector2(0.9f, 0.99f), Vector2.zero, Vector2.zero);
 
             var win = UiFactory.AddButton(canvas.transform, "Win", "End: Win",
@@ -131,6 +186,7 @@ namespace RealmShards.UI
             {
                 if (_ending) return;
                 _ending = true;
+                HitStop.EnsureRunningTimeScale();
                 GameContext.Instance?.Runs.AdvanceToNextCity();
             });
         }
@@ -139,6 +195,7 @@ namespace RealmShards.UI
         {
             if (_ending) return;
             _ending = true;
+            HitStop.EnsureRunningTimeScale();
             var ctx = GameContext.Instance;
             if (ctx == null) return;
 
