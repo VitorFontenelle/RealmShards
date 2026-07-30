@@ -60,7 +60,7 @@ namespace RealmShards
                 return null;
             }
 
-            int key = prefab.GetInstanceID();
+            int key = prefab.GetEntityId().GetHashCode();
             if (_pools.TryGetValue(key, out var existing))
             {
                 return existing;

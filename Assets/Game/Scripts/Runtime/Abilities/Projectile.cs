@@ -135,7 +135,7 @@ namespace RealmShards
             var hurtbox = other.GetComponent<Hurtbox>() ?? other.GetComponentInParent<Hurtbox>();
             if (hurtbox != null && hurtbox.Health != null)
             {
-                int id = hurtbox.Health.GetInstanceID();
+                int id = hurtbox.Health.GetEntityId().GetHashCode();
                 if (_hitIds.Contains(id))
                 {
                     return;
@@ -182,20 +182,20 @@ namespace RealmShards
                 return;
             }
 
-            int did = damageable is MonoBehaviour mb ? mb.GetInstanceID() : damageable.GetHashCode();
+            int did = damageable is MonoBehaviour mb ? mb.GetEntityId().GetHashCode() : damageable.GetHashCode();
             if (_hitIds.Contains(did))
             {
                 return;
             }
 
-            var info = DamageInfo.Create(
+            var dmgInfo = DamageInfo.Create(
                 damage,
                 (Vector2)transform.right * knockback,
                 other.ClosestPoint(transform.position),
                 _owner,
                 _owner != null ? _owner.gameObject : gameObject);
 
-            if (damageable.TryApplyDamage(in info))
+            if (damageable.TryApplyDamage(in dmgInfo))
             {
                 _hitIds.Add(did);
                 if (!pierce)

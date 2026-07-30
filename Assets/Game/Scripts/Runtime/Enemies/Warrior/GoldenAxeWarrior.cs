@@ -5,7 +5,7 @@ namespace RealmShards.Enemies
     /// <summary>
     /// Golden Axe Warrior: approach → telegraph → active hitbox window → cooldown.
     /// </summary>
-    public sealed class GoldenAxeWarrior : EnemyBrainBase
+    public class GoldenAxeWarrior : EnemyBrainBase
     {
         [SerializeField] private Transform hitboxAnchor;
         private EnemyHitbox _hitbox;

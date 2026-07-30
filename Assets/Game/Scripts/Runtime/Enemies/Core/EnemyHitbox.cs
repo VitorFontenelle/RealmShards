@@ -66,9 +66,9 @@ namespace RealmShards.Enemies
             if (damageable.Faction == FactionId.Enemy)
                 return;
 
-            int id = other.GetInstanceID();
+            int id = other.GetEntityId().GetHashCode();
             if (damageable is Object uo)
-                id = uo.GetInstanceID();
+                id = uo.GetEntityId().GetHashCode();
             if (!_hitThisSwing.Add(id))
                 return;
 
