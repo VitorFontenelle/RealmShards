@@ -59,6 +59,23 @@ namespace RealmShards.UI
             return text;
         }
 
+        public static Image AddSprite(Transform parent, string name, Sprite sprite, Vector2 anchorMin, Vector2 anchorMax, Vector2 offsetMin, Vector2 offsetMax, bool preserveAspect = false)
+        {
+            var go = new GameObject(name, typeof(RectTransform), typeof(Image));
+            go.transform.SetParent(parent, false);
+            var rt = go.GetComponent<RectTransform>();
+            rt.anchorMin = anchorMin;
+            rt.anchorMax = anchorMax;
+            rt.offsetMin = offsetMin;
+            rt.offsetMax = offsetMax;
+            var image = go.GetComponent<Image>();
+            image.sprite = sprite;
+            image.type = Image.Type.Simple;
+            image.preserveAspect = preserveAspect;
+            image.raycastTarget = false;
+            return image;
+        }
+
         public static Button AddButton(Transform parent, string name, string label, Vector2 anchorMin, Vector2 anchorMax, Vector2 offsetMin, Vector2 offsetMax, Color? color = null)
         {
             var go = new GameObject(name, typeof(RectTransform), typeof(Image), typeof(Button));

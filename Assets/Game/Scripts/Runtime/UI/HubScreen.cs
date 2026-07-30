@@ -8,17 +8,29 @@ using UnityEngine.UI;
 namespace RealmShards.UI
 {
     /// <summary>
-    /// Hub: title → lobby with mixed-device join, loadout cycling, route length, controls, start run.
+    /// Hub: title attract → main menu → lobby with mixed-device join, loadout cycling, route length, controls, start run.
     /// </summary>
     public sealed class HubScreen : MonoBehaviour
     {
+        private enum HubState
+        {
+            Attract,
+            Menu,
+            Lobby
+        }
+
+        private HubState _state;
         private GameObject _titlePanel;
+        private GameObject _menuPanel;
         private GameObject _lobbyPanel;
+        private Text _pressPrompt;
         private Text _statusText;
         private Text _loadoutText;
         private Text _joinPrompt;
         private Text[] _slotLabels;
+        private Button _playButton;
         private int _preCapital = 2;
+        private float _promptBlinkTimer;
         private ControlsRebindScreen _controls;
         private LocalCoopLobby _lobby;
         private InputAction _joinAction;
@@ -41,8 +53,7 @@ namespace RealmShards.UI
                 : new LocalCoopLobby();
             _lobby.ResetAll();
             Build();
-            ShowTitle();
-            Refresh();
+            ShowAttract();
             HookJoinListening(true);
         }
 
@@ -59,7 +70,15 @@ namespace RealmShards.UI
 
         private void Update()
         {
-            if (_lobbyPanel == null || !_lobbyPanel.activeSelf)
+            if (_state == HubState.Attract)
+            {
+                UpdatePressPromptBlink();
+                if (WasAnyButtonPressed())
+                    ShowMenu();
+                return;
+            }
+
+            if (_state != HubState.Lobby || _lobbyPanel == null || !_lobbyPanel.activeSelf)
                 return;
 
             // Keyboard Space / Enter join
@@ -103,28 +122,71 @@ namespace RealmShards.UI
         private void Build()
         {
             var root = transform;
-            UiFactory.AddPanel(root, "Background", new Color(0.08f, 0.09f, 0.12f, 1f),
-                Vector2.zero, Vector2.one, Vector2.zero, Vector2.zero);
 
             _titlePanel = new GameObject("TitlePanel", typeof(RectTransform));
             _titlePanel.transform.SetParent(root, false);
             StretchFull(_titlePanel.GetComponent<RectTransform>());
 
-            UiFactory.AddText(_titlePanel.transform, "Title", "RealmShards", 64, TextAnchor.MiddleCenter,
-                new Color(0.85f, 0.9f, 1f),
-                new Vector2(0.1f, 0.55f), new Vector2(0.9f, 0.75f), Vector2.zero, Vector2.zero);
-            UiFactory.AddText(_titlePanel.transform, "Tagline", "Local co-op · Deck & Desktop", 22, TextAnchor.MiddleCenter,
-                new Color(0.65f, 0.7f, 0.78f),
-                new Vector2(0.2f, 0.48f), new Vector2(0.8f, 0.56f), Vector2.zero, Vector2.zero);
+            var titleSprite = Resources.Load<Sprite>("UI/title_screen");
+            if (titleSprite != null)
+            {
+                UiFactory.AddSprite(_titlePanel.transform, "TitleArt", titleSprite,
+                    Vector2.zero, Vector2.one, Vector2.zero, Vector2.zero);
+            }
+            else
+            {
+                UiFactory.AddPanel(_titlePanel.transform, "FallbackBackground", new Color(0.08f, 0.09f, 0.12f, 1f),
+                    Vector2.zero, Vector2.one, Vector2.zero, Vector2.zero);
+                UiFactory.AddText(_titlePanel.transform, "FallbackTitle", "RealmShards", 64, TextAnchor.MiddleCenter,
+                    new Color(0.85f, 0.9f, 1f),
+                    new Vector2(0.1f, 0.55f), new Vector2(0.9f, 0.75f), Vector2.zero, Vector2.zero);
+            }
 
-            var start = UiFactory.AddButton(_titlePanel.transform, "Start", "Start",
-                new Vector2(0.35f, 0.28f), new Vector2(0.65f, 0.40f), Vector2.zero, Vector2.zero,
-                new Color(0.15f, 0.45f, 0.32f, 1f));
-            start.onClick.AddListener(ShowLobby);
+            _pressPrompt = UiFactory.AddText(_titlePanel.transform, "PressPrompt", "PRESS ANY BUTTON", 24,
+                TextAnchor.MiddleCenter, Color.white,
+                new Vector2(0.2f, 0.04f), new Vector2(0.8f, 0.10f), Vector2.zero, Vector2.zero);
+            _pressPrompt.fontStyle = FontStyle.Bold;
+
+            _menuPanel = new GameObject("MenuPanel", typeof(RectTransform));
+            _menuPanel.transform.SetParent(_titlePanel.transform, false);
+            StretchFull(_menuPanel.GetComponent<RectTransform>());
+
+            UiFactory.AddPanel(_menuPanel.transform, "MenuDim",
+                new Color(0.02f, 0.03f, 0.06f, 0.35f),
+                Vector2.zero, Vector2.one, Vector2.zero, Vector2.zero);
+
+            _playButton = UiFactory.AddButton(_menuPanel.transform, "Play", "Play",
+                new Vector2(0.35f, 0.34f), new Vector2(0.65f, 0.44f), Vector2.zero, Vector2.zero,
+                new Color(0.15f, 0.45f, 0.32f, 0.95f));
+            _playButton.onClick.AddListener(ShowLobby);
+
+            var settings = UiFactory.AddButton(_menuPanel.transform, "Settings", "Settings",
+                new Vector2(0.35f, 0.22f), new Vector2(0.65f, 0.32f), Vector2.zero, Vector2.zero,
+                new Color(0.2f, 0.3f, 0.45f, 0.95f));
+            settings.onClick.AddListener(OpenSettings);
+
+            var quit = UiFactory.AddButton(_menuPanel.transform, "Quit", "Quit",
+                new Vector2(0.35f, 0.10f), new Vector2(0.65f, 0.20f), Vector2.zero, Vector2.zero,
+                new Color(0.45f, 0.18f, 0.18f, 0.95f));
+            quit.onClick.AddListener(GameQuit.Request);
+
+            var nav = new Navigation { mode = Navigation.Mode.Explicit };
+            nav.selectOnDown = settings;
+            _playButton.navigation = nav;
+            nav = new Navigation { mode = Navigation.Mode.Explicit };
+            nav.selectOnUp = _playButton;
+            nav.selectOnDown = quit;
+            settings.navigation = nav;
+            nav = new Navigation { mode = Navigation.Mode.Explicit };
+            nav.selectOnUp = settings;
+            quit.navigation = nav;
 
             _lobbyPanel = new GameObject("LobbyPanel", typeof(RectTransform));
             _lobbyPanel.transform.SetParent(root, false);
             StretchFull(_lobbyPanel.GetComponent<RectTransform>());
+
+            UiFactory.AddPanel(_lobbyPanel.transform, "Background", new Color(0.08f, 0.09f, 0.12f, 1f),
+                Vector2.zero, Vector2.one, Vector2.zero, Vector2.zero);
 
             UiFactory.AddText(_lobbyPanel.transform, "LobbyTitle", "Hub Lobby", 40, TextAnchor.MiddleCenter,
                 new Color(0.85f, 0.9f, 1f),
@@ -199,12 +261,17 @@ namespace RealmShards.UI
             }
         }
 
-        private void OpenControls()
+        private void OpenSettings()
         {
             var ctx = GameContext.Instance;
             if (ctx == null) return;
             _controls ??= ControlsRebindScreen.EnsurePresent(transform, ctx.InputActions, ctx.Bindings);
             _controls.Show();
+        }
+
+        private void OpenControls()
+        {
+            OpenSettings();
         }
 
         private void TryJoinDevice(InputDevice device, string scheme)
@@ -259,17 +326,77 @@ namespace RealmShards.UI
             rt.offsetMax = Vector2.zero;
         }
 
-        private void ShowTitle()
+        private void ShowAttract()
         {
+            _state = HubState.Attract;
             _titlePanel.SetActive(true);
+            _menuPanel.SetActive(false);
             _lobbyPanel.SetActive(false);
+            if (_pressPrompt != null)
+            {
+                _pressPrompt.gameObject.SetActive(true);
+                _promptBlinkTimer = 0f;
+            }
+        }
+
+        private void ShowMenu()
+        {
+            _state = HubState.Menu;
+            _titlePanel.SetActive(true);
+            _menuPanel.SetActive(true);
+            _lobbyPanel.SetActive(false);
+            if (_pressPrompt != null)
+                _pressPrompt.gameObject.SetActive(false);
+            GameContext.EnsureEventSystem();
+            if (_playButton != null)
+                _playButton.Select();
         }
 
         private void ShowLobby()
         {
+            _state = HubState.Lobby;
             _titlePanel.SetActive(false);
             _lobbyPanel.SetActive(true);
             Refresh();
+        }
+
+        private void UpdatePressPromptBlink()
+        {
+            if (_pressPrompt == null) return;
+            _promptBlinkTimer += Time.unscaledDeltaTime;
+            var alpha = 0.45f + 0.55f * (0.5f + 0.5f * Mathf.Sin(_promptBlinkTimer * 4f));
+            var color = _pressPrompt.color;
+            color.a = alpha;
+            _pressPrompt.color = color;
+        }
+
+        private static bool WasAnyButtonPressed()
+        {
+            var kb = Keyboard.current;
+            if (kb != null && kb.anyKey.wasPressedThisFrame)
+                return true;
+
+            var mouse = Mouse.current;
+            if (mouse != null && (mouse.leftButton.wasPressedThisFrame
+                                  || mouse.rightButton.wasPressedThisFrame
+                                  || mouse.middleButton.wasPressedThisFrame))
+                return true;
+
+            var pads = Gamepad.all;
+            for (int i = 0; i < pads.Count; i++)
+            {
+                var pad = pads[i];
+                if (pad == null) continue;
+                if (pad.buttonSouth.wasPressedThisFrame
+                    || pad.buttonEast.wasPressedThisFrame
+                    || pad.buttonWest.wasPressedThisFrame
+                    || pad.buttonNorth.wasPressedThisFrame
+                    || pad.startButton.wasPressedThisFrame
+                    || pad.selectButton.wasPressedThisFrame)
+                    return true;
+            }
+
+            return false;
         }
 
         private void Refresh()
