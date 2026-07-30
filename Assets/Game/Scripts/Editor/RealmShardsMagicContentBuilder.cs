@@ -66,19 +66,29 @@ namespace RealmShards.Editor
             var echo = MakeAbility("ContinuumEcho", ContentIdDefaults.AbilityContinuumEcho, "Continuum Echo",
                 AbilityKind.Projectile, 0.55f, 11f, 2f, 28, ContentIdDefaults.SchoolContinuum, MagicElement.Temporal);
             echo.EditorSetStatuses(new StatusApplication { type = StatusEffectType.Ward, duration = 4f, magnitude = 25f });
-            // Ward on self via caster-side would be better; for Stage 2 apply on hit enemy as stolen time ward on caster handled in future.
+            echo.EditorSetApplyStatusesToSelf(true);
             Wire(slip, projectile, hitbox, overlay);
             Wire(echo, projectile, hitbox, overlay);
+
+            var bastion = MakeAbility("GildedBastion", ContentIdDefaults.AbilityGildedBastion, "Gilded Bastion",
+                AbilityKind.MeleeHitbox, 1.1f, 8f, 1f, 24, ContentIdDefaults.SchoolGilded, MagicElement.Gold);
+            bastion.EditorSetStatuses(new StatusApplication { type = StatusEffectType.Ward, duration = 3f, magnitude = 20f });
+            bastion.EditorSetApplyStatusesToSelf(true);
+            var howl = MakeAbility("AshenHowl", ContentIdDefaults.AbilityAshenHowl, "Ashen Howl",
+                AbilityKind.MeleeHitbox, 0.9f, 10f, 4f, 20, ContentIdDefaults.SchoolAshen, MagicElement.Ash);
+            howl.EditorSetStatuses(new StatusApplication { type = StatusEffectType.Slow, duration = 2.2f, magnitude = 1.4f });
+            Wire(bastion, projectile, hitbox, overlay);
+            Wire(howl, projectile, hitbox, overlay);
 
             MakeSchool(ContentIdDefaults.SchoolNeutral, "Neutral Arcana", "Baseline Magus craft.",
                 new Color(0.7f, 0.5f, 0.95f),
                 new[] { ContentIdDefaults.AbilityBasicBolt, ContentIdDefaults.AbilityArcanePulse, ContentIdDefaults.AbilityBlinkStep });
             MakeSchool(ContentIdDefaults.SchoolGilded, "Gilded Ward", "Forge-fire of the golden city.",
                 new Color(1f, 0.75f, 0.25f),
-                new[] { ContentIdDefaults.AbilityGildedFlare, ContentIdDefaults.AbilityGildedSmite });
+                new[] { ContentIdDefaults.AbilityGildedFlare, ContentIdDefaults.AbilityGildedSmite, ContentIdDefaults.AbilityGildedBastion });
             MakeSchool(ContentIdDefaults.SchoolAshen, "Ashen Veil", "Cinder winds and quiet ruin.",
                 new Color(0.55f, 0.5f, 0.55f),
-                new[] { ContentIdDefaults.AbilityAshenDrift, ContentIdDefaults.AbilityAshenCinder });
+                new[] { ContentIdDefaults.AbilityAshenDrift, ContentIdDefaults.AbilityAshenCinder, ContentIdDefaults.AbilityAshenHowl });
             MakeSchool(ContentIdDefaults.SchoolTideglass, "Tideglass", "Mirrored tides of Neutral Reach.",
                 new Color(0.3f, 0.65f, 0.9f),
                 new[] { ContentIdDefaults.AbilityTideglassRipple, ContentIdDefaults.AbilityTideglassHarpoon });

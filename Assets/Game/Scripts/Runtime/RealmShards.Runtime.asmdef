@@ -1,0 +1,16 @@
+{
+    "name": "RealmShards.Runtime",
+    "rootNamespace": "RealmShards",
+    "references": [
+        "Unity.InputSystem",
+        "Unity.ugui"
+    ],
+    "includePlatforms": [],
+    "allowUnsafeCode": false,
+    "autoReferenced": true,
+    "overrideReferences": false,
+    "precompiledReferences": [],
+    "defineConstraints": [],
+    "versionDefines": [],
+    "noEngineReferences": false
+}

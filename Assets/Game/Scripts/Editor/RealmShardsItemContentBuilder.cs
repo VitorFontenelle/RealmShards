@@ -116,10 +116,36 @@ namespace RealmShards.Editor
                 "ChronoweaveSand.png");
             SetOnHit(chrono, damageMult: 0.12f, vestigeChance: 0.08f, vestigeAmt: 1, healOnHit: 0f);
 
-            BuildPickupPrefabs(heart, ember, mind, needle, halo, stride, lode, chrono);
+            var iron = Build(
+                "IronvineCharm",
+                Save.ContentIdDefaults.ItemIronvine,
+                "Ironvine Charm",
+                ItemKind.StatBoost,
+                "Rooted wards of the Reach.",
+                "+40 Max HP; slight slow tradeoff (-0.15 move).",
+                new Color(0.45f, 0.7f, 0.4f),
+                "IronvineCharm.png");
+            SetStats(iron, maxHp: 40f, move: -0.15f);
+
+            var glass = Build(
+                "GlassmarrowPhial",
+                Save.ContentIdDefaults.ItemGlassmarrow,
+                "Glassmarrow Phial",
+                ItemKind.AbilityModifier,
+                "Tideglass marrow for sharper casts.",
+                "+2 bolt splits; +6 flat ability damage.",
+                new Color(0.55f, 0.85f, 0.95f),
+                "GlassmarrowPhial.png");
+            SetBolt(glass, pierce: false, flatDamage: 6f);
+            var glassSo = new SerializedObject(glass);
+            glassSo.FindProperty("boltSplitExtraProjectiles").intValue = 2;
+            glassSo.ApplyModifiedPropertiesWithoutUndo();
+            EditorUtility.SetDirty(glass);
+
+            BuildPickupPrefabs(heart, ember, mind, needle, halo, stride, lode, chrono, iron, glass);
             AssetDatabase.SaveAssets();
             AssetDatabase.Refresh();
-            Debug.Log("[RealmShards] Items content setup complete (8 items).");
+            Debug.Log("[RealmShards] Items content setup complete (10 items).");
         }
 
         private static ItemDefinition Build(
