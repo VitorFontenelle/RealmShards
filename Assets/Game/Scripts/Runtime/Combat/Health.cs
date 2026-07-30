@@ -80,6 +80,13 @@ namespace RealmShards
             Revived?.Invoke(this);
         }
 
+        public void Heal(float amount)
+        {
+            if (_dead || amount <= 0f)
+                return;
+            _current = Mathf.Min(maxHealth, _current + amount);
+        }
+
         public void PulseIFrames(float duration)
         {
             _iFrameTimer = Mathf.Max(_iFrameTimer, duration);
@@ -127,7 +134,18 @@ namespace RealmShards
                 }
             }
 
-            _current = Mathf.Max(0f, _current - Mathf.Max(0f, damage.Amount));
+            float incoming = Mathf.Max(0f, damage.Amount);
+            var statusHost = GetComponent<Magic.StatusEffectHost>();
+            if (statusHost != null)
+                incoming = statusHost.AbsorbDamage(incoming);
+
+            if (incoming <= 0f)
+            {
+                _iFrameTimer = iFrameDuration;
+                return true;
+            }
+
+            _current = Mathf.Max(0f, _current - incoming);
             _iFrameTimer = iFrameDuration;
 
             if (knockbackBody != null && damage.Knockback.sqrMagnitude > 0.0001f)

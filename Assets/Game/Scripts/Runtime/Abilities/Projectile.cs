@@ -17,6 +17,7 @@ namespace RealmShards
         private FactionMember _owner;
         private float _timer;
         private bool _active;
+        private System.Action<DamageInfo, Health> _onHit;
         private readonly System.Collections.Generic.HashSet<int> _hitIds = new System.Collections.Generic.HashSet<int>();
 
         private void Awake()
@@ -76,6 +77,7 @@ namespace RealmShards
             _active = false;
             _hitIds.Clear();
             _owner = null;
+            _onHit = null;
             if (_body != null)
             {
                 _body.linearVelocity = Vector2.zero;
@@ -91,7 +93,8 @@ namespace RealmShards
             float moveSpeed,
             float life,
             bool canPierce,
-            Color tint)
+            Color tint,
+            System.Action<DamageInfo, Health> onHit = null)
         {
             transform.position = position;
             if (direction.sqrMagnitude < 0.001f)
@@ -109,6 +112,7 @@ namespace RealmShards
             speed = moveSpeed;
             lifetime = life;
             pierce = canPierce;
+            _onHit = onHit;
             _timer = lifetime;
             _hitIds.Clear();
             _active = true;
@@ -154,6 +158,7 @@ namespace RealmShards
                 if (hurtbox.TryReceiveHit(in info))
                 {
                     _hitIds.Add(id);
+                    _onHit?.Invoke(info, hurtbox.Health);
                     if (!pierce)
                     {
                         Despawn();
