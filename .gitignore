@@ -93,3 +93,10 @@ crashlytics-build.properties
 # Auto-generated Plastic SCM files
 *.private.0
 *.private.*
+
+# Local RealmShards editor setup markers (idempotency only; content lives in prefabs/SOs)
+/[Aa]ssets/[Gg]ame/[Dd]ata/.realmshards_player_setup
+/[Aa]ssets/[Gg]ame/[Dd]ata/.stage2_setup_done
+
+# Unity Editor scene-template defaults (machine-local, regenerated on open)
+/[Pp]roject[Ss]ettings/[Ss]cene[Tt]emplate[Ss]ettings.json
