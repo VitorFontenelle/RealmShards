@@ -20,6 +20,7 @@ namespace RealmShards.World
             public Transform TomeSpawn;
             public Transform ChestSpawn;
             public Transform WardrobeSpawn;
+            public Transform VendorSpawn;
             public Vector3[] PlayerSpawns;
         }
 
@@ -74,6 +75,10 @@ namespace RealmShards.World
             wardrobeGo.transform.SetParent(baseArena.Root, false);
             wardrobeGo.transform.position = new Vector3(-5.2f, -1.2f, 0f);
 
+            var vendorGo = new GameObject("VendorSpawn");
+            vendorGo.transform.SetParent(baseArena.Root, false);
+            vendorGo.transform.position = new Vector3(0f, 2.9f, 0f);
+
             var spawns = new[]
             {
                 new Vector3(-4.5f, -3.5f, 0f),
@@ -93,6 +98,7 @@ namespace RealmShards.World
                 TomeSpawn = tomeGo.transform,
                 ChestSpawn = chestGo.transform,
                 WardrobeSpawn = wardrobeGo.transform,
+                VendorSpawn = vendorGo.transform,
                 PlayerSpawns = spawns
             };
         }

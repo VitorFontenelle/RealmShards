@@ -167,4 +167,47 @@ namespace RealmShards.Tests.EditMode
             Object.DestroyImmediate(c2);
         }
     }
+
+    public sealed class ItemsVendorTests
+    {
+        [Test]
+        public void Offers_Only_Unowned_Items_Up_To_Three()
+        {
+            var save = new JsonSaveService("test_vendor_offers_save.json");
+            save.DeleteSave();
+            save.LoadOrCreate();
+            var progression = new ProgressionService(save);
+            progression.UnlockItem(ContentIdDefaults.ItemHeartward);
+            progression.UnlockItem(ContentIdDefaults.ItemEmberSpark);
+
+            var offered = ItemsVendorService.GetOfferedItemIds(save.Current.meta);
+
+            Assert.LessOrEqual(offered.Count, ItemsVendorService.MaxDisplayedItems);
+            Assert.IsFalse(offered.Contains(ContentIdDefaults.ItemHeartward));
+            Assert.IsFalse(offered.Contains(ContentIdDefaults.ItemEmberSpark));
+            for (int i = 0; i < offered.Count; i++)
+                Assert.IsFalse(PlayerItemLoadoutService.IsItemUnlocked(save.Current.meta, offered[i]));
+
+            save.DeleteSave();
+        }
+
+        [Test]
+        public void Claim_Unlocks_Item_For_Chest()
+        {
+            var save = new JsonSaveService("test_vendor_claim_save.json");
+            save.DeleteSave();
+            save.LoadOrCreate();
+
+            var offered = ItemsVendorService.GetOfferedItemIds(save.Current.meta);
+            Assert.Greater(offered.Count, 0);
+
+            string itemId = offered[0];
+            Assert.IsTrue(ItemsVendorService.TryClaimItem(itemId, save, out _));
+            Assert.IsTrue(PlayerItemLoadoutService.IsItemUnlocked(save.Current.meta, itemId));
+            Assert.IsFalse(ItemsVendorService.TryClaimItem(itemId, save, out var reason));
+            Assert.AreEqual("Already owned.", reason);
+
+            save.DeleteSave();
+        }
+    }
 }

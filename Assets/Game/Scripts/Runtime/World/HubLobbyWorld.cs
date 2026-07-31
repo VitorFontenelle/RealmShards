@@ -22,6 +22,7 @@ namespace RealmShards.World
         private ItemChestSelectScreen _itemUi;
         private WardrobePedestal _wardrobe;
         private WardrobeBuildScreen _wardrobeUi;
+        private ItemsVendorDisplay _vendor;
         private LocalCoopLobby _lobby;
         private readonly GameObject[] _avatars = new GameObject[LocalCoopLobby.MaxPlayers];
         private readonly PlayerOverheadHealthBar[] _healthBars = new PlayerOverheadHealthBar[LocalCoopLobby.MaxPlayers];
@@ -91,6 +92,7 @@ namespace RealmShards.World
             PollTomeInteract();
             PollChestInteract();
             PollWardrobeInteract();
+            PollVendorInteract();
             PollExit();
         }
 
@@ -119,6 +121,8 @@ namespace RealmShards.World
             _tome = TomePedestal.Create(_arena.Root, _arena.TomeSpawn.position);
             _chest = ItemChestPedestal.Create(_arena.Root, _arena.ChestSpawn.position);
             _wardrobe = WardrobePedestal.Create(_arena.Root, _arena.WardrobeSpawn.position);
+            _vendor = ItemsVendorDisplay.Create(_arena.Root, _arena.VendorSpawn.position);
+            RefreshVendorDisplay();
             _exitCollider = _arena.ExitTrigger.GetComponent<BoxCollider2D>();
         }
 
@@ -303,6 +307,47 @@ namespace RealmShards.World
                 return;
 
             _wardrobe.PlayOpen(() => _wardrobeUi.ShowForPlayer(player));
+        }
+
+        private void PollVendorInteract()
+        {
+            if (_vendor == null || IsLobbyMenuOpen())
+                return;
+
+            var players = new List<(Vector3 position, bool actionPressed)>(LocalCoopLobby.MaxPlayers);
+            for (int i = 0; i < LocalCoopLobby.MaxPlayers; i++)
+            {
+                if (!_lobby.GetSlot(i).Joined)
+                    continue;
+                var avatar = _avatars[i];
+                if (avatar == null)
+                    continue;
+
+                var slot = _lobby.GetSlot(i);
+                players.Add((avatar.transform.position, WasActionPressed(slot)));
+            }
+
+            if (players.Count == 0)
+                return;
+
+            if (!_vendor.TryResolveItemInteract(players, out string itemId, out int slotIndex))
+                return;
+
+            var ctx = GameContext.Instance;
+            if (ctx?.Save == null)
+                return;
+
+            if (!ItemsVendorService.TryClaimItem(itemId, ctx.Save, out _))
+                return;
+
+            _vendor.PlayClaimEffect(slotIndex);
+            RefreshVendorDisplay();
+        }
+
+        private void RefreshVendorDisplay()
+        {
+            var meta = GameContext.Instance?.Save?.Current?.meta;
+            _vendor?.RefreshDisplay(meta);
         }
 
         /// <summary>
