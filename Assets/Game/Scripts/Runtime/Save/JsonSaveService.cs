@@ -215,6 +215,9 @@ namespace RealmShards.Save
                 data.settings.systemCursor = false;
             }
 
+            if (data.version < 10)
+                data.meta.vials = Mathf.Max(0, data.meta.vials);
+
             data.meta.decade = data.meta.year / 10;
             data.version = SaveData.CurrentVersion;
             return data;

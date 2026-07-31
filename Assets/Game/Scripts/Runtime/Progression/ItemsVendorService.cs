@@ -4,11 +4,12 @@ using RealmShards.Save;
 namespace RealmShards.Progression
 {
     /// <summary>
-    /// Hub lobby items vendor: surfaces unowned catalog items and grants free unlocks to the chest.
+    /// Hub lobby items vendor: surfaces unowned catalog items for vial purchase.
     /// </summary>
     public static class ItemsVendorService
     {
         public const int MaxDisplayedItems = 3;
+        public const int ItemClaimCost = UnlockCosts.ItemVendor;
 
         public static List<string> GetOfferedItemIds(MetaProgressionData meta)
         {
@@ -73,7 +74,11 @@ namespace RealmShards.Progression
                 return false;
             }
 
-            new ProgressionService(save).UnlockItem(itemId);
+            var progression = new ProgressionService(save);
+            if (!progression.TrySpendVials(ItemClaimCost, out failReason))
+                return false;
+
+            progression.UnlockItem(itemId);
             return true;
         }
     }

@@ -19,6 +19,7 @@ namespace RealmShards.Progression
         public int Year => _save.Current.meta.year;
         public int Decade => _save.Current.meta.decade;
         public int ArcaneVestiges => _save.Current.meta.arcaneVestiges;
+        public int Vials => _save.Current.meta.vials;
 
         public event Action<int, int> YearChanged;
 
@@ -54,6 +55,37 @@ namespace RealmShards.Progression
             {
                 _save.Save();
             }
+        }
+
+        public void AddVials(int amount, bool saveImmediately = true)
+        {
+            if (amount == 0)
+                return;
+
+            var meta = _save.Current.meta;
+            meta.vials = Mathf.Max(0, meta.vials + amount);
+            if (saveImmediately)
+                _save.Save();
+        }
+
+        public bool TrySpendVials(int cost, out string failReason)
+        {
+            failReason = null;
+            if (cost < 0)
+            {
+                failReason = "Invalid cost.";
+                return false;
+            }
+
+            if (Vials < cost)
+            {
+                failReason = "Not enough vials.";
+                return false;
+            }
+
+            _save.Current.meta.vials -= cost;
+            _save.Save();
+            return true;
         }
 
         public bool IsAbilityUnlocked(string abilityId)

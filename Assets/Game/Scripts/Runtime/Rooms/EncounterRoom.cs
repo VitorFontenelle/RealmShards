@@ -1,5 +1,8 @@
 using System;
 using System.Collections.Generic;
+using RealmShards.Core;
+using RealmShards.Progression;
+using RealmShards.Save;
 using UnityEngine;
 
 namespace RealmShards.Rooms
@@ -147,6 +150,7 @@ namespace RealmShards.Rooms
         {
             health.Died -= OnEnemyDied;
             _alive.Remove(health);
+            RunCurrencyRewards.OnOpponentDefeated();
             if (_alive.Count == 0)
                 Complete();
         }

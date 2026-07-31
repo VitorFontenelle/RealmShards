@@ -65,6 +65,7 @@ namespace RealmShards.Runs
         public IReadOnlyList<IReadOnlyList<string>> LoadoutsByPlayer { get; private set; }
         public IReadOnlyList<string> SelectedItemIdsByPlayer { get; private set; }
         public RunOutcome LastOutcome { get; private set; }
+        public int RunCoins { get; private set; }
 
         public void Begin(
             string cityId,
@@ -98,6 +99,14 @@ namespace RealmShards.Runs
                 ? new List<string>(selectedItemsByPlayer)
                 : new List<string>();
             LastOutcome = null;
+            RunCoins = 0;
+        }
+
+        public void AddRunCoins(int amount)
+        {
+            if (amount <= 0)
+                return;
+            RunCoins = Mathf.Max(0, RunCoins + amount);
         }
 
         public void AdvanceToNode(int nodeIndex)
@@ -146,6 +155,7 @@ namespace RealmShards.Runs
             LoadoutsByPlayer = null;
             SelectedItemIdsByPlayer = null;
             LastOutcome = null;
+            RunCoins = 0;
         }
     }
 

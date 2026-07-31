@@ -71,6 +71,7 @@ namespace RealmShards.World
 
             SetupEncounter();
             CombatHud.EnsurePresent();
+            RunCurrencyFlashHud.EnsurePresent();
             MinimapHud.EnsurePresent();
             PauseMenu.EnsurePresent();
             PlayerLocatePresenter.EnsurePresent();

@@ -9,7 +9,7 @@ namespace RealmShards.Save
     [Serializable]
     public sealed class SaveData
     {
-        public const int CurrentVersion = 9;
+        public const int CurrentVersion = 10;
 
         public int version = CurrentVersion;
         public long lastSavedUnixUtc;
@@ -24,6 +24,7 @@ namespace RealmShards.Save
         public int year = 1000;
         public int decade = 100;
         public int arcaneVestiges;
+        public int vials;
 
         public List<string> unlockedAbilityIds = new List<string>
         {
@@ -140,5 +141,12 @@ namespace RealmShards.Save
         public const int ArcanePulse = 15;
         public const int BlinkStep = 20;
         public const int DashLegacy = 25;
+        public const int ItemVendor = 50;
+    }
+
+    public static class CurrencyRewards
+    {
+        public const int VialsPerOpponent = 1;
+        public const int CoinsPerOpponent = 5;
     }
 }

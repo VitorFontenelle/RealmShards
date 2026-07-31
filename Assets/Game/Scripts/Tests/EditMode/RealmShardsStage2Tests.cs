@@ -197,6 +197,8 @@ namespace RealmShards.Tests.EditMode
             var save = new JsonSaveService("test_vendor_claim_save.json");
             save.DeleteSave();
             save.LoadOrCreate();
+            save.Current.meta.vials = ItemsVendorService.ItemClaimCost;
+            save.Save();
 
             var offered = ItemsVendorService.GetOfferedItemIds(save.Current.meta);
             Assert.Greater(offered.Count, 0);
@@ -204,10 +206,60 @@ namespace RealmShards.Tests.EditMode
             string itemId = offered[0];
             Assert.IsTrue(ItemsVendorService.TryClaimItem(itemId, save, out _));
             Assert.IsTrue(PlayerItemLoadoutService.IsItemUnlocked(save.Current.meta, itemId));
+            Assert.AreEqual(0, save.Current.meta.vials);
             Assert.IsFalse(ItemsVendorService.TryClaimItem(itemId, save, out var reason));
             Assert.AreEqual("Already owned.", reason);
 
             save.DeleteSave();
+        }
+
+        [Test]
+        public void Claim_Fails_When_Insufficient_Vials()
+        {
+            var save = new JsonSaveService("test_vendor_vials_save.json");
+            save.DeleteSave();
+            save.LoadOrCreate();
+            save.Current.meta.vials = ItemsVendorService.ItemClaimCost - 1;
+            save.Save();
+
+            var offered = ItemsVendorService.GetOfferedItemIds(save.Current.meta);
+            Assert.Greater(offered.Count, 0);
+
+            Assert.IsFalse(ItemsVendorService.TryClaimItem(offered[0], save, out var reason));
+            Assert.AreEqual("Not enough vials.", reason);
+            Assert.IsFalse(PlayerItemLoadoutService.IsItemUnlocked(save.Current.meta, offered[0]));
+
+            save.DeleteSave();
+        }
+    }
+
+    public sealed class CurrencyTests
+    {
+        [Test]
+        public void Vials_Persist_In_Save()
+        {
+            var save = new JsonSaveService("test_vials_save.json");
+            save.DeleteSave();
+            save.LoadOrCreate();
+            var progression = new ProgressionService(save);
+            progression.AddVials(7, saveImmediately: false);
+            save.Save();
+
+            var loaded = save.LoadOrCreate();
+            Assert.AreEqual(7, loaded.meta.vials);
+            save.DeleteSave();
+        }
+
+        [Test]
+        public void RunCoins_Reset_Per_Run()
+        {
+            var session = new RunSession();
+            session.Begin(ContentIdDefaults.CityStarter, ContentIdDefaults.RouteWorldMain, 1, 1);
+            session.AddRunCoins(CurrencyRewards.CoinsPerOpponent);
+            Assert.AreEqual(CurrencyRewards.CoinsPerOpponent, session.RunCoins);
+
+            session.Begin(ContentIdDefaults.CityStarter, ContentIdDefaults.RouteWorldMain, 2, 1);
+            Assert.AreEqual(0, session.RunCoins);
         }
     }
 }

@@ -16,6 +16,7 @@ namespace RealmShards.World
     {
         private HubLobbyArena.LobbyArenaResult _arena;
         private HubLobbyJoinHud _joinHud;
+        private HubVialHud _vialHud;
         private TomePedestal _tome;
         private TomeSpellSelectScreen _spellUi;
         private ItemChestPedestal _chest;
@@ -46,6 +47,7 @@ namespace RealmShards.World
             _preCapital = Mathf.Clamp(GameContext.Instance?.Save?.Current?.meta?.preferredPreCapitalNodes ?? 2, 1, 3);
             BuildWorld();
             _joinHud = HubLobbyJoinHud.EnsurePresent();
+            _vialHud = HubVialHud.EnsurePresent();
             _spellUi = TomeSpellSelectScreen.EnsurePresent(transform);
             _spellUi.Closed += OnSpellUiClosed;
             _itemUi = ItemChestSelectScreen.EnsurePresent(transform);
@@ -100,12 +102,14 @@ namespace RealmShards.World
         {
             gameObject.SetActive(true);
             _joinHud?.Show();
+            _vialHud?.Show();
             RefreshJoinHud();
         }
 
         public void Hide()
         {
             _joinHud?.Hide();
+            _vialHud?.Hide();
             _spellUi?.Hide();
             _itemUi?.Hide();
             _wardrobeUi?.Hide();
@@ -342,6 +346,7 @@ namespace RealmShards.World
 
             _vendor.PlayClaimEffect(slotIndex);
             RefreshVendorDisplay();
+            _vialHud?.Refresh();
         }
 
         private void RefreshVendorDisplay()
