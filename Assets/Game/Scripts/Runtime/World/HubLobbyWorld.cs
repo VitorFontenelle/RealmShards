@@ -20,6 +20,8 @@ namespace RealmShards.World
         private TomeSpellSelectScreen _spellUi;
         private ItemChestPedestal _chest;
         private ItemChestSelectScreen _itemUi;
+        private WardrobePedestal _wardrobe;
+        private WardrobeBuildScreen _wardrobeUi;
         private LocalCoopLobby _lobby;
         private readonly GameObject[] _avatars = new GameObject[LocalCoopLobby.MaxPlayers];
         private readonly PlayerOverheadHealthBar[] _healthBars = new PlayerOverheadHealthBar[LocalCoopLobby.MaxPlayers];
@@ -47,6 +49,8 @@ namespace RealmShards.World
             _spellUi.Closed += OnSpellUiClosed;
             _itemUi = ItemChestSelectScreen.EnsurePresent(transform);
             _itemUi.Closed += OnItemUiClosed;
+            _wardrobeUi = WardrobeBuildScreen.EnsurePresent(transform);
+            _wardrobeUi.Closed += OnWardrobeUiClosed;
             RefreshJoinHud();
         }
 
@@ -62,6 +66,8 @@ namespace RealmShards.World
                 _spellUi.Closed -= OnSpellUiClosed;
             if (_itemUi != null)
                 _itemUi.Closed -= OnItemUiClosed;
+            if (_wardrobeUi != null)
+                _wardrobeUi.Closed -= OnWardrobeUiClosed;
         }
 
         private void OnSpellUiClosed()
@@ -74,11 +80,17 @@ namespace RealmShards.World
             _chest?.BeginIdleClosed();
         }
 
+        private void OnWardrobeUiClosed()
+        {
+            _wardrobe?.BeginIdleClosed();
+        }
+
         private void Update()
         {
             PollJoinInput();
             PollTomeInteract();
             PollChestInteract();
+            PollWardrobeInteract();
             PollExit();
         }
 
@@ -94,6 +106,7 @@ namespace RealmShards.World
             _joinHud?.Hide();
             _spellUi?.Hide();
             _itemUi?.Hide();
+            _wardrobeUi?.Hide();
             gameObject.SetActive(false);
         }
 
@@ -105,6 +118,7 @@ namespace RealmShards.World
             SetupCamera();
             _tome = TomePedestal.Create(_arena.Root, _arena.TomeSpawn.position);
             _chest = ItemChestPedestal.Create(_arena.Root, _arena.ChestSpawn.position);
+            _wardrobe = WardrobePedestal.Create(_arena.Root, _arena.WardrobeSpawn.position);
             _exitCollider = _arena.ExitTrigger.GetComponent<BoxCollider2D>();
         }
 
@@ -249,9 +263,14 @@ namespace RealmShards.World
                 _joinHud.SetSlotVisible(i, !_lobby.GetSlot(i).Joined);
         }
 
+        private bool IsLobbyMenuOpen() =>
+            _spellUi?.IsVisible == true
+            || _itemUi?.IsVisible == true
+            || _wardrobeUi?.IsVisible == true;
+
         private void PollTomeInteract()
         {
-            if (_tome == null || _spellUi == null || _itemUi?.IsVisible == true)
+            if (_tome == null || _spellUi == null || IsLobbyMenuOpen())
                 return;
 
             if (!TryResolveInteractPlayer(_tome.transform.position, _tome.ContainsPoint, out int player))
@@ -262,13 +281,24 @@ namespace RealmShards.World
 
         private void PollChestInteract()
         {
-            if (_chest == null || _itemUi == null || _spellUi?.IsVisible == true)
+            if (_chest == null || _itemUi == null || IsLobbyMenuOpen())
                 return;
 
             if (!TryResolveInteractPlayer(_chest.transform.position, _chest.ContainsPoint, out int player))
                 return;
 
             _chest.PlayOpen(() => _itemUi.ShowForPlayer(player));
+        }
+
+        private void PollWardrobeInteract()
+        {
+            if (_wardrobe == null || _wardrobeUi == null || IsLobbyMenuOpen())
+                return;
+
+            if (!TryResolveInteractPlayer(_wardrobe.transform.position, _wardrobe.ContainsPoint, out int player))
+                return;
+
+            _wardrobe.PlayOpen(() => _wardrobeUi.ShowForPlayer(player));
         }
 
         private bool TryResolveInteractPlayer(Vector3 targetPosition, System.Func<Vector2, bool> hitTest, out int player)

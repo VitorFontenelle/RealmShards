@@ -197,6 +197,12 @@ namespace RealmShards.Save
                 PlayerLoadoutService.EnsureLoadouts(data.meta);
             }
 
+            if (data.version < 7)
+            {
+                PlayerLoadoutService.EnsureLoadouts(data.meta);
+                PlayerBuildService.EnsureBanks(data.meta);
+            }
+
             data.meta.decade = data.meta.year / 10;
             data.version = SaveData.CurrentVersion;
             return data;

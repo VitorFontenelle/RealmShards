@@ -9,7 +9,7 @@ namespace RealmShards.Save
     [Serializable]
     public sealed class SaveData
     {
-        public const int CurrentVersion = 6;
+        public const int CurrentVersion = 7;
 
         public int version = CurrentVersion;
         public long lastSavedUnixUtc;
@@ -51,6 +51,7 @@ namespace RealmShards.Save
         public bool ultimateSlotUnlocked;
         public List<string> unlockedItemIds = new List<string>();
         public List<PlayerLoadoutData> playerLoadouts = new List<PlayerLoadoutData>();
+        public List<PlayerBuildBank> playerBuildBanks = new List<PlayerBuildBank>();
     }
 
     [Serializable]
