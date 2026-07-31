@@ -42,6 +42,7 @@ namespace RealmShards.World
             BuildWorld();
             _joinHud = HubLobbyJoinHud.EnsurePresent();
             _spellUi = TomeSpellSelectScreen.EnsurePresent(transform);
+            _spellUi.Closed += OnSpellUiClosed;
             RefreshJoinHud();
         }
 
@@ -53,6 +54,13 @@ namespace RealmShards.World
         private void OnDisable()
         {
             InputSystem.onDeviceChange -= OnDeviceChange;
+            if (_spellUi != null)
+                _spellUi.Closed -= OnSpellUiClosed;
+        }
+
+        private void OnSpellUiClosed()
+        {
+            _tome?.BeginIdleClosed();
         }
 
         private void Update()

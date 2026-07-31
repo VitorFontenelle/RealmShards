@@ -18,6 +18,8 @@ namespace RealmShards.UI
         private int _playerIndex;
         private readonly Dictionary<AbilitySlotRole, Text> _valueLabels = new Dictionary<AbilitySlotRole, Text>();
 
+        public event System.Action Closed;
+
         public static TomeSpellSelectScreen EnsurePresent(Transform parent)
         {
             var existing = Object.FindFirstObjectByType<TomeSpellSelectScreen>();
@@ -113,6 +115,7 @@ namespace RealmShards.UI
         {
             if (_root != null)
                 _root.SetActive(false);
+            Closed?.Invoke();
         }
 
         private void Cycle(AbilitySlotRole role, int delta)
