@@ -209,6 +209,12 @@ namespace RealmShards.Save
                 MigrateLegacyBuildBanks(data.meta);
             }
 
+            if (data.version < 9)
+            {
+                data.settings ??= new SettingsData();
+                data.settings.systemCursor = false;
+            }
+
             data.meta.decade = data.meta.year / 10;
             data.version = SaveData.CurrentVersion;
             return data;

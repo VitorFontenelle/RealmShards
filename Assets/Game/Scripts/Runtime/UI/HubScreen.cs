@@ -81,21 +81,19 @@ namespace RealmShards.UI
         {
             var root = transform;
 
-            var safe = new GameObject("SafeArea", typeof(RectTransform));
-            safe.transform.SetParent(root, false);
-            var safeRt = safe.GetComponent<RectTransform>();
-            UiScaleConfig.ApplySafeArea(safeRt);
-
+            // Full-bleed attract art (no SafeArea inset — that caused the blue camera border).
             _attractPanel = new GameObject("AttractPanel", typeof(RectTransform));
-            _attractPanel.transform.SetParent(safe.transform, false);
+            _attractPanel.transform.SetParent(root, false);
             StretchFull(_attractPanel.GetComponent<RectTransform>());
             _attractGroup = UiFactory.AddCanvasGroup(_attractPanel);
 
             var titleSprite = Resources.Load<Sprite>("UI/title_screen");
             if (titleSprite != null)
             {
-                UiFactory.AddSprite(_attractPanel.transform, "TitleArt", titleSprite,
+                var art = UiFactory.AddSprite(_attractPanel.transform, "TitleArt", titleSprite,
                     Vector2.zero, Vector2.one, Vector2.zero, Vector2.zero);
+                art.preserveAspect = false;
+                art.type = Image.Type.Simple;
             }
             else
             {
@@ -172,7 +170,7 @@ namespace RealmShards.UI
             quit.navigation = nav;
 
             var flashGo = new GameObject("TransitionFlash", typeof(RectTransform), typeof(Image));
-            flashGo.transform.SetParent(safe.transform, false);
+            flashGo.transform.SetParent(root, false);
             StretchFull(flashGo.GetComponent<RectTransform>());
             _transitionFlash = flashGo.GetComponent<Image>();
             _transitionFlash.color = new Color(FlashColor.r, FlashColor.g, FlashColor.b, 0f);

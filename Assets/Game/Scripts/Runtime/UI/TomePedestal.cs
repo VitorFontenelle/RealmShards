@@ -14,6 +14,8 @@ namespace RealmShards.UI
         private const int IdleFrameB = 1;
         private const int OpenLoopFrame = 7;
         private const float IdleFrameDuration = 0.55f;
+        private const float WorldScale = 0.58f;
+        private const float SpritePpu = 200f;
         private static readonly float[] OpenFrameDurations = { 0.14f, 0.14f, 0.16f, 0.16f, 0.2f };
 
         private enum TomeState
@@ -30,13 +32,15 @@ namespace RealmShards.UI
         private TomeState _state = TomeState.IdleClosed;
 
         public bool IsOpenActive => _state == TomeState.OpenActive;
+        public Vector3 InteractPoint => transform.position + new Vector3(0f, 0.35f, 0f);
 
         public static TomePedestal Create(Transform parent, Vector3 position)
         {
             var go = new GameObject("TomePedestal");
             go.transform.SetParent(parent, false);
             go.transform.position = position;
-            go.transform.localScale = Vector3.one * 1.35f;
+            go.transform.localScale = Vector3.one * WorldScale;
+            go.layer = GameLayers.Environment;
             return go.AddComponent<TomePedestal>();
         }
 
@@ -49,8 +53,9 @@ namespace RealmShards.UI
             _renderer.sortingOrder = 12;
 
             _collider = gameObject.AddComponent<BoxCollider2D>();
-            _collider.isTrigger = true;
-            _collider.size = new Vector2(1.4f, 1.6f);
+            _collider.isTrigger = false;
+            _collider.size = new Vector2(1.15f, 1.35f);
+            _collider.offset = new Vector2(0f, 0.55f);
 
             BeginIdleClosed();
         }
@@ -170,7 +175,7 @@ namespace RealmShards.UI
                 {
                     int y = tex.height - (row + 1) * frameH;
                     var rect = new Rect(col * frameW, y, frameW, frameH);
-                    frames[index++] = Sprite.Create(tex, rect, new Vector2(0.5f, 0.15f), 100f);
+                    frames[index++] = Sprite.Create(tex, rect, new Vector2(0.5f, 0.15f), SpritePpu);
                 }
             }
 

@@ -224,6 +224,10 @@ namespace RealmShards.World
                 instance.name = $"LobbyPlayer_{playerIndex + 1}";
                 try { instance.tag = "Player"; } catch { }
                 instance.GetComponent<PlayerController>()?.InitializePlayer(playerIndex);
+                // Lobby is console-style exploration — no combat casts while browsing pedestals.
+                var caster = instance.GetComponent<AbilityCaster>();
+                if (caster != null)
+                    caster.enabled = false;
                 var slot = _lobby.GetSlot(playerIndex);
                 var pi = instance.GetComponent<PlayerInput>();
                 if (pi != null && slot.PrimaryDevice != null)
@@ -273,7 +277,7 @@ namespace RealmShards.World
             if (_tome == null || _spellUi == null || IsLobbyMenuOpen())
                 return;
 
-            if (!TryResolveInteractPlayer(_tome.transform.position, _tome.ContainsPoint, out int player))
+            if (!TryResolveInteractPlayer(_tome.InteractPoint, out int player))
                 return;
 
             _tome.PlayOpen(() => _spellUi.ShowForPlayer(player));
@@ -284,7 +288,7 @@ namespace RealmShards.World
             if (_chest == null || _itemUi == null || IsLobbyMenuOpen())
                 return;
 
-            if (!TryResolveInteractPlayer(_chest.transform.position, _chest.ContainsPoint, out int player))
+            if (!TryResolveInteractPlayer(_chest.InteractPoint, out int player))
                 return;
 
             _chest.PlayOpen(() => _itemUi.ShowForPlayer(player));
@@ -295,52 +299,64 @@ namespace RealmShards.World
             if (_wardrobe == null || _wardrobeUi == null || IsLobbyMenuOpen())
                 return;
 
-            if (!TryResolveInteractPlayer(_wardrobe.transform.position, _wardrobe.ContainsPoint, out int player))
+            if (!TryResolveInteractPlayer(_wardrobe.InteractPoint, out int player))
                 return;
 
             _wardrobe.PlayOpen(() => _wardrobeUi.ShowForPlayer(player));
         }
 
-        private bool TryResolveInteractPlayer(Vector3 targetPosition, System.Func<Vector2, bool> hitTest, out int player)
+        /// <summary>
+        /// Console-style interact: player must be near the object and press attack/interact.
+        /// Mouse position is ignored — left click is just the keyboard attack button.
+        /// </summary>
+        private bool TryResolveInteractPlayer(Vector3 targetPosition, out int player)
         {
             player = -1;
-            const float interactRange = 2.2f;
+            const float interactRange = 1.85f;
 
-            if (Mouse.current != null && Mouse.current.leftButton.wasPressedThisFrame)
+            for (int i = 0; i < LocalCoopLobby.MaxPlayers; i++)
             {
-                var world = Camera.main != null
-                    ? (Vector2)Camera.main.ScreenToWorldPoint(Mouse.current.position.ReadValue())
-                    : Vector2.zero;
-                if (!hitTest(world))
-                    return false;
+                if (!_lobby.GetSlot(i).Joined)
+                    continue;
+                var avatar = _avatars[i];
+                if (avatar == null)
+                    continue;
+                if (Vector2.Distance(avatar.transform.position, targetPosition) > interactRange)
+                    continue;
 
-                if (_lobby.Claims.TryGetPlayerForDevice(Keyboard.current, out int kbPlayer))
-                    player = kbPlayer;
-                else
-                    player = FirstJoinedPlayer();
-                return true;
-            }
+                var slot = _lobby.GetSlot(i);
+                if (!WasActionPressed(slot))
+                    continue;
 
-            foreach (var pad in Gamepad.all)
-            {
-                if (pad == null || !pad.buttonSouth.wasPressedThisFrame) continue;
-                if (!_lobby.Claims.TryGetPlayerForDevice(pad, out int idx)) continue;
-                if (_avatars[idx] == null) continue;
-                float dist = Vector2.Distance(_avatars[idx].transform.position, targetPosition);
-                if (dist > interactRange) continue;
-                player = idx;
+                player = i;
                 return true;
             }
 
             return false;
         }
 
-        private int FirstJoinedPlayer()
+        private static bool WasActionPressed(LocalCoopLobby.Slot slot)
         {
-            for (int i = 0; i < LocalCoopLobby.MaxPlayers; i++)
-                if (_lobby.GetSlot(i).Joined)
-                    return i;
-            return 0;
+            // Attack / interact / confirm-style face buttons — not mouse-over targeting.
+            if (slot.PrimaryDevice is Keyboard)
+            {
+                var kb = Keyboard.current;
+                var mouse = Mouse.current;
+                if (kb != null && (kb.eKey.wasPressedThisFrame || kb.jKey.wasPressedThisFrame || kb.spaceKey.wasPressedThisFrame))
+                    return true;
+                if (mouse != null && mouse.leftButton.wasPressedThisFrame)
+                    return true;
+                return false;
+            }
+
+            if (slot.PrimaryDevice is Gamepad pad)
+            {
+                return pad.buttonWest.wasPressedThisFrame
+                       || pad.buttonSouth.wasPressedThisFrame
+                       || pad.leftShoulder.wasPressedThisFrame;
+            }
+
+            return false;
         }
 
         private void PollExit()

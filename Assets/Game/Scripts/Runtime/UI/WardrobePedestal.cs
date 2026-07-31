@@ -13,6 +13,8 @@ namespace RealmShards.UI
         private const int ClosedFrame = 0;
         private const int GlowLoopStart = 4;
         private const int GlowLoopEnd = 7;
+        private const float WorldScale = 0.55f;
+        private const float SpritePpu = 200f;
         private static readonly float[] OpenFrameDurations = { 0.12f, 0.12f, 0.14f, 0.16f, 0.18f };
 
         private enum WardrobeState
@@ -29,13 +31,15 @@ namespace RealmShards.UI
         private WardrobeState _state = WardrobeState.IdleClosed;
 
         public bool IsGlowActive => _state == WardrobeState.GlowActive;
+        public Vector3 InteractPoint => transform.position + new Vector3(0f, 0.4f, 0f);
 
         public static WardrobePedestal Create(Transform parent, Vector3 position)
         {
             var go = new GameObject("Wardrobe");
             go.transform.SetParent(parent, false);
             go.transform.position = position;
-            go.transform.localScale = Vector3.one * 1.3f;
+            go.transform.localScale = Vector3.one * WorldScale;
+            go.layer = GameLayers.Environment;
             return go.AddComponent<WardrobePedestal>();
         }
 
@@ -48,8 +52,9 @@ namespace RealmShards.UI
             _renderer.sortingOrder = 11;
 
             _collider = gameObject.AddComponent<BoxCollider2D>();
-            _collider.isTrigger = true;
-            _collider.size = new Vector2(1.5f, 2.1f);
+            _collider.isTrigger = false;
+            _collider.size = new Vector2(1.25f, 1.7f);
+            _collider.offset = new Vector2(0f, 0.75f);
         }
 
         public bool ContainsPoint(Vector2 worldPoint) => _collider != null && _collider.OverlapPoint(worldPoint);
@@ -144,7 +149,7 @@ namespace RealmShards.UI
                 {
                     int y = tex.height - (row + 1) * frameH;
                     var rect = new Rect(col * frameW, y, frameW, frameH);
-                    frames[index++] = Sprite.Create(tex, rect, new Vector2(0.5f, 0.08f), 100f);
+                    frames[index++] = Sprite.Create(tex, rect, new Vector2(0.5f, 0.08f), SpritePpu);
                 }
             }
 

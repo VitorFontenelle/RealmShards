@@ -41,22 +41,10 @@ namespace RealmShards
 
             if (_aim != null && aim != null)
             {
-                bool mouse = playerInput != null &&
-                             playerInput.currentControlScheme != null &&
-                             playerInput.currentControlScheme.Contains("Keyboard");
-
-                if (mouse && Mouse.current != null)
-                {
-                    aim.SetMouseScreenPosition(Mouse.current.position.ReadValue());
-                }
-                else
-                {
-                    Vector2 stick = _aim.ReadValue<Vector2>();
-                    if (stick.sqrMagnitude > 0.01f)
-                    {
-                        aim.SetAimInput(stick, false);
-                    }
-                }
+                // Console-style: never aim with mouse cursor position. Right-stick / Aim action only.
+                Vector2 stick = _aim.ReadValue<Vector2>();
+                if (stick.sqrMagnitude > 0.01f)
+                    aim.SetAimInput(stick, false);
             }
         }
 

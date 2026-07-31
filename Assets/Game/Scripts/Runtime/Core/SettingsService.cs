@@ -213,9 +213,10 @@ namespace RealmShards.Core
 
         private static void ApplyCursor()
         {
-            if (Data == null) return;
-            Cursor.visible = Data.systemCursor;
-            Cursor.lockState = Data.systemCursor ? CursorLockMode.None : CursorLockMode.Confined;
+            // Console-style presentation: hide system cursor during play unless explicitly enabled.
+            bool show = Data != null && Data.systemCursor;
+            Cursor.visible = show;
+            Cursor.lockState = show ? CursorLockMode.None : CursorLockMode.Locked;
         }
 
         private static void ApplyBrightness()
