@@ -15,6 +15,9 @@ namespace RealmShards.UI
         private bool _paused;
         private GameObject _overlay;
         private Button _resumeButton;
+        private Button _settingsButton;
+        private Button _quitButton;
+        private MenuNavigator _nav;
 
         public static void EnsurePresent()
         {
@@ -33,20 +36,50 @@ namespace RealmShards.UI
 
         private void Update()
         {
+            if (_paused)
+            {
+                var options = FindFirstObjectByType<OptionsScreen>();
+                if (options != null && options.IsVisible)
+                {
+                    // Options owns cancel; Start closes settings and stays paused.
+                    if (WasStartPressed())
+                        options.Hide();
+                    return;
+                }
+
+                // Esc/B is handled by MenuNavigator (Resume). Start / P also resume.
+                if (WasStartPressed() || WasPKeyPressed())
+                    Resume();
+                return;
+            }
+
             if (WasPausePressed())
-                Toggle();
+                Pause();
         }
 
         private static bool WasPausePressed()
         {
-            var kb = Keyboard.current;
-            if (kb != null && (kb.escapeKey.wasPressedThisFrame || kb.pKey.wasPressedThisFrame))
-                return true;
+            return WasStartPressed() || WasPKeyPressed() || WasEscapePressed();
+        }
 
+        private static bool WasEscapePressed()
+        {
+            var kb = Keyboard.current;
+            return kb != null && kb.escapeKey.wasPressedThisFrame;
+        }
+
+        private static bool WasPKeyPressed()
+        {
+            var kb = Keyboard.current;
+            return kb != null && kb.pKey.wasPressedThisFrame;
+        }
+
+        private static bool WasStartPressed()
+        {
             var pads = Gamepad.all;
             for (int i = 0; i < pads.Count; i++)
             {
-                if (pads[i].startButton.wasPressedThisFrame)
+                if (pads[i] != null && pads[i].startButton.wasPressedThisFrame)
                     return true;
             }
 
@@ -68,14 +101,14 @@ namespace RealmShards.UI
             EnsureOverlay();
             _overlay.SetActive(true);
             GameContext.EnsureEventSystem();
-            if (_resumeButton != null)
-                _resumeButton.Select();
+            ActivateNav();
         }
 
         public void Resume()
         {
             if (!_paused) return;
             _paused = false;
+            _nav?.Deactivate();
             HitStop.SetMenuPaused(false);
             Audio.AudioEventHub.Play("ui.resume");
             if (_overlay != null)
@@ -99,7 +132,7 @@ namespace RealmShards.UI
                 TextAnchor.MiddleCenter, Color.white,
                 new Vector2(0.3f, 0.72f), new Vector2(0.7f, 0.86f), Vector2.zero, Vector2.zero);
 
-            UiFactory.AddText(canvas.transform, "Hint", "Esc / Start · gamepad navigate", 16,
+            UiFactory.AddText(canvas.transform, "Hint", "Up/Down · Confirm · Esc/B back", 16,
                 TextAnchor.MiddleCenter, new Color(1f, 1f, 1f, 0.65f),
                 new Vector2(0.25f, 0.66f), new Vector2(0.75f, 0.72f), Vector2.zero, Vector2.zero);
 
@@ -108,41 +141,59 @@ namespace RealmShards.UI
                 new Color(0.15f, 0.4f, 0.3f, 0.95f));
             _resumeButton.onClick.AddListener(Resume);
 
-            var settings = UiFactory.AddButton(canvas.transform, "Settings", "Settings",
+            _settingsButton = UiFactory.AddButton(canvas.transform, "Settings", "Settings",
                 new Vector2(0.35f, 0.40f), new Vector2(0.65f, 0.50f), Vector2.zero, Vector2.zero,
                 new Color(0.2f, 0.3f, 0.45f, 0.95f));
-            settings.onClick.AddListener(OpenSettings);
+            _settingsButton.onClick.AddListener(OpenSettings);
 
-            var quit = UiFactory.AddButton(canvas.transform, "Quit", "Quit to Hub",
+            _quitButton = UiFactory.AddButton(canvas.transform, "Quit", "Quit to Hub",
                 new Vector2(0.35f, 0.28f), new Vector2(0.65f, 0.38f), Vector2.zero, Vector2.zero,
                 new Color(0.45f, 0.18f, 0.18f, 0.95f));
-            quit.onClick.AddListener(QuitToHub);
+            _quitButton.onClick.AddListener(QuitToHub);
 
-            // Explicit navigation for gamepads
-            var nav = new Navigation { mode = Navigation.Mode.Explicit };
-            nav.selectOnDown = settings;
-            _resumeButton.navigation = nav;
-            nav = new Navigation { mode = Navigation.Mode.Explicit };
-            nav.selectOnUp = _resumeButton;
-            nav.selectOnDown = quit;
-            settings.navigation = nav;
-            nav = new Navigation { mode = Navigation.Mode.Explicit };
-            nav.selectOnUp = settings;
-            quit.navigation = nav;
+            _nav = gameObject.AddComponent<MenuNavigator>();
+        }
+
+        private void ActivateNav()
+        {
+            if (_nav == null) return;
+            _nav.Configure(new[]
+            {
+                new MenuNavigator.Entry
+                {
+                    Visual = _resumeButton.GetComponent<RectTransform>(),
+                    Selectable = _resumeButton,
+                    OnConfirm = Resume
+                },
+                new MenuNavigator.Entry
+                {
+                    Visual = _settingsButton.GetComponent<RectTransform>(),
+                    Selectable = _settingsButton,
+                    OnConfirm = OpenSettings
+                },
+                new MenuNavigator.Entry
+                {
+                    Visual = _quitButton.GetComponent<RectTransform>(),
+                    Selectable = _quitButton,
+                    OnConfirm = QuitToHub
+                }
+            }, onCancel: Resume, startIndex: 0);
+            _nav.Activate(0);
         }
 
         private void OpenSettings()
         {
-            OptionsScreen.EnsurePresent(transform).Show();
-        }
-
-        private void OpenControls()
-        {
-            OpenSettings();
+            _nav?.Deactivate();
+            OptionsScreen.EnsurePresent(transform).Show(onClosed: () =>
+            {
+                if (_paused)
+                    ActivateNav();
+            });
         }
 
         private void QuitToHub()
         {
+            _nav?.Deactivate();
             HitStop.EnsureRunningTimeScale();
             _paused = false;
             var ctx = GameContext.Instance;

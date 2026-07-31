@@ -16,7 +16,10 @@ namespace RealmShards.UI
         private Text _title;
         private Text _status;
         private readonly List<Text> _slotSummaries = new List<Text>();
+        private readonly List<MenuNavigator.Entry> _navEntries = new List<MenuNavigator.Entry>();
         private ConfirmDialog _confirm;
+        private MenuNavigator _nav;
+        private Button _closeButton;
         private int _playerIndex;
 
         public event System.Action Closed;
@@ -71,13 +74,21 @@ namespace RealmShards.UI
             for (int slot = 0; slot < PlayerBuildService.SlotCount; slot++)
                 AddSlotRow(box.transform, slot, ref y);
 
-            var close = UiFactory.AddButton(box.transform, "Close", "DONE",
+            _closeButton = UiFactory.AddButton(box.transform, "Close", "DONE",
                 new Vector2(0.62f, 0.03f), new Vector2(0.94f, 0.09f), Vector2.zero, Vector2.zero,
                 new Color(0.18f, 0.2f, 0.26f, 0.95f), UiFonts.MenuBold);
-            close.GetComponentInChildren<Text>().fontSize = 18;
-            close.onClick.AddListener(Hide);
+            _closeButton.GetComponentInChildren<Text>().fontSize = 18;
+            _closeButton.onClick.AddListener(Hide);
+
+            _navEntries.Add(new MenuNavigator.Entry
+            {
+                Visual = _closeButton.GetComponent<RectTransform>(),
+                Selectable = _closeButton,
+                OnConfirm = Hide
+            });
 
             _confirm = ConfirmDialog.EnsurePresent(transform);
+            _nav = gameObject.AddComponent<MenuNavigator>();
         }
 
         private void AddSlotRow(Transform parent, int slotIndex, ref float yTop)
@@ -98,20 +109,33 @@ namespace RealmShards.UI
                 new Color(0.18f, 0.28f, 0.38f, 0.95f), UiFonts.MenuBold);
             save.GetComponentInChildren<Text>().fontSize = 13;
             save.onClick.AddListener(() => PromptSave(captured));
+            AddButtonEntry(save);
 
             var dress = UiFactory.AddButton(parent, $"Dress{slotIndex}", "DRESS",
                 new Vector2(0.71f, yMin), new Vector2(0.83f, yTop), Vector2.zero, Vector2.zero,
                 new Color(0.22f, 0.18f, 0.34f, 0.95f), UiFonts.MenuBold);
             dress.GetComponentInChildren<Text>().fontSize = 13;
             dress.onClick.AddListener(() => PromptDress(captured));
+            AddButtonEntry(dress);
 
             var delete = UiFactory.AddButton(parent, $"Delete{slotIndex}", "DELETE",
                 new Vector2(0.84f, yMin), new Vector2(0.96f, yTop), Vector2.zero, Vector2.zero,
                 new Color(0.34f, 0.14f, 0.16f, 0.95f), UiFonts.MenuBold);
             delete.GetComponentInChildren<Text>().fontSize = 13;
             delete.onClick.AddListener(() => PromptDelete(captured));
+            AddButtonEntry(delete);
 
             yTop = yMin - 0.01f;
+        }
+
+        private void AddButtonEntry(Button button)
+        {
+            _navEntries.Add(new MenuNavigator.Entry
+            {
+                Visual = button.GetComponent<RectTransform>(),
+                Selectable = button,
+                OnConfirm = () => button.onClick.Invoke()
+            });
         }
 
         public void ShowForPlayer(int playerIndex)
@@ -121,18 +145,27 @@ namespace RealmShards.UI
             gameObject.SetActive(true);
             GameContext.EnsureEventSystem();
             Refresh();
+            ActivateNav();
         }
 
         public void Hide()
         {
             _confirm?.Hide();
+            _nav?.Deactivate();
             if (_root != null)
                 _root.SetActive(false);
             Closed?.Invoke();
         }
 
+        private void ActivateNav()
+        {
+            _nav.Configure(_navEntries, onCancel: Hide, startIndex: 0);
+            _nav.Activate(0);
+        }
+
         private void PromptSave(int slotIndex)
         {
+            _nav?.Deactivate();
             _confirm.Show(
                 $"Save P{_playerIndex + 1}'s current spells and item to shared Slot {slotIndex + 1}? This overwrites that slot for everyone.",
                 () =>
@@ -141,7 +174,8 @@ namespace RealmShards.UI
                     if (ctx?.Save == null) return;
                     PlayerBuildService.SaveCurrentBuild(_playerIndex, slotIndex, ctx.Save);
                     Refresh();
-                });
+                },
+                onClosed: ActivateNav);
         }
 
         private void PromptDress(int slotIndex)
@@ -156,13 +190,15 @@ namespace RealmShards.UI
                 return;
             }
 
+            _nav?.Deactivate();
             _confirm.Show(
                 $"Equip shared Slot {slotIndex + 1} for all players? Everyone's lobby loadout will be replaced.",
                 () =>
                 {
                     PlayerBuildService.DressBuild(slotIndex, ctx.Save);
                     Refresh();
-                });
+                },
+                onClosed: ActivateNav);
         }
 
         private void PromptDelete(int slotIndex)
@@ -177,13 +213,15 @@ namespace RealmShards.UI
                 return;
             }
 
+            _nav?.Deactivate();
             _confirm.Show(
                 $"Delete shared Slot {slotIndex + 1} for everyone? This cannot be undone.",
                 () =>
                 {
                     PlayerBuildService.DeleteBuild(slotIndex, ctx.Save);
                     Refresh();
-                });
+                },
+                onClosed: ActivateNav);
         }
 
         private void Refresh()
@@ -193,7 +231,7 @@ namespace RealmShards.UI
 
             var meta = ctx.Save.Current.meta;
             _title.text = "WARDROBE — SHARED BUILDS";
-            _status.text = "Six shared slots · Save uses your loadout · Dress applies to all players.";
+            _status.text = "Up/Down · Confirm · Esc/B closes · Cancel focused on confirms.";
 
             for (int i = 0; i < _slotSummaries.Count && i < PlayerBuildService.SlotCount; i++)
             {

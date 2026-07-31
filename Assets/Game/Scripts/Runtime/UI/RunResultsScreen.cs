@@ -69,6 +69,18 @@ namespace RealmShards.UI
                 new Vector2(0.35f, 0.12f), new Vector2(0.65f, 0.22f), Vector2.zero, Vector2.zero,
                 new Color(0.2f, 0.35f, 0.5f, 1f));
             hub.onClick.AddListener(() => SceneManager.LoadScene(SceneNames.Hub));
+
+            var nav = gameObject.AddComponent<MenuNavigator>();
+            nav.Configure(new[]
+            {
+                new MenuNavigator.Entry
+                {
+                    Visual = hub.GetComponent<RectTransform>(),
+                    Selectable = hub,
+                    OnConfirm = () => hub.onClick.Invoke()
+                }
+            }, onCancel: () => SceneManager.LoadScene(SceneNames.Hub), startIndex: 0);
+            nav.Activate(0);
         }
     }
 }

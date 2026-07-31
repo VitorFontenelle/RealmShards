@@ -3,7 +3,6 @@ using RealmShards.Core;
 using RealmShards.Input;
 using RealmShards.Save;
 using UnityEngine;
-using UnityEngine.InputSystem;
 using UnityEngine.UI;
 
 namespace RealmShards.UI
@@ -16,7 +15,13 @@ namespace RealmShards.UI
         private GameObject _root;
         private Text _status;
         private readonly List<RowBinding> _rows = new List<RowBinding>();
+        private readonly List<MenuNavigator.Entry> _navEntries = new List<MenuNavigator.Entry>();
         private ControlsRebindScreen _controls;
+        private MenuNavigator _nav;
+        private ScrollRect _scroll;
+        private RectTransform _contentRt;
+        private Button _backButton;
+        private System.Action _onClosed;
 
         private struct RowBinding
         {
@@ -92,19 +97,19 @@ namespace RealmShards.UI
 
             var content = new GameObject("Content", typeof(RectTransform));
             content.transform.SetParent(viewport.transform, false);
-            var contentRt = content.GetComponent<RectTransform>();
-            contentRt.anchorMin = new Vector2(0f, 1f);
-            contentRt.anchorMax = new Vector2(1f, 1f);
-            contentRt.pivot = new Vector2(0.5f, 1f);
-            contentRt.anchoredPosition = Vector2.zero;
-            contentRt.sizeDelta = new Vector2(0f, 760f);
+            _contentRt = content.GetComponent<RectTransform>();
+            _contentRt.anchorMin = new Vector2(0f, 1f);
+            _contentRt.anchorMax = new Vector2(1f, 1f);
+            _contentRt.pivot = new Vector2(0.5f, 1f);
+            _contentRt.anchoredPosition = Vector2.zero;
+            _contentRt.sizeDelta = new Vector2(0f, 760f);
 
-            var scroll = scrollGo.GetComponent<ScrollRect>();
-            scroll.viewport = viewportRt;
-            scroll.content = contentRt;
-            scroll.horizontal = false;
-            scroll.vertical = true;
-            scroll.movementType = ScrollRect.MovementType.Clamped;
+            _scroll = scrollGo.GetComponent<ScrollRect>();
+            _scroll.viewport = viewportRt;
+            _scroll.content = _contentRt;
+            _scroll.horizontal = false;
+            _scroll.vertical = true;
+            _scroll.movementType = ScrollRect.MovementType.Clamped;
 
             float y = 0f;
             const float rowH = 34f;
@@ -144,31 +149,50 @@ namespace RealmShards.UI
                 RefreshAll();
                 _status.text = "Defaults restored.";
             });
-            contentRt.sizeDelta = new Vector2(0f, y + 12f);
+            _contentRt.sizeDelta = new Vector2(0f, y + 12f);
 
             _status = UiFactory.AddText(box.transform, "Status", string.Empty, 15, TextAnchor.MiddleCenter,
                 new Color(0.75f, 0.78f, 0.85f, 0.9f),
                 new Vector2(0.08f, 0.02f), new Vector2(0.62f, 0.09f), Vector2.zero, Vector2.zero, UiFonts.MenuRegular);
 
-            var back = UiFactory.AddButton(box.transform, "Back", "BACK",
+            _backButton = UiFactory.AddButton(box.transform, "Back", "BACK",
                 new Vector2(0.66f, 0.02f), new Vector2(0.92f, 0.09f), Vector2.zero, Vector2.zero,
                 new Color(0.18f, 0.20f, 0.26f, 0.95f), UiFonts.MenuBold);
-            back.GetComponentInChildren<Text>().fontSize = 22;
-            back.onClick.AddListener(Hide);
+            _backButton.GetComponentInChildren<Text>().fontSize = 22;
+            _backButton.onClick.AddListener(Hide);
+
+            var backRt = _backButton.GetComponent<RectTransform>();
+            _navEntries.Add(new MenuNavigator.Entry
+            {
+                Visual = backRt,
+                Selectable = _backButton,
+                OnConfirm = Hide
+            });
+
+            _nav = gameObject.AddComponent<MenuNavigator>();
         }
 
-        public void Show()
+        public void Show(System.Action onClosed = null)
         {
+            _onClosed = onClosed;
             if (_root != null) _root.SetActive(true);
             gameObject.SetActive(true);
             GameContext.EnsureEventSystem();
             RefreshAll();
+            _nav.Configure(_navEntries, onCancel: Hide, startIndex: 0);
+            _nav.Activate(0);
         }
 
         public void Hide()
         {
+            _nav?.Deactivate();
             if (_root != null) _root.SetActive(false);
+            var closed = _onClosed;
+            _onClosed = null;
+            closed?.Invoke();
         }
+
+        public bool IsVisible => _root != null && _root.activeSelf;
 
         private void OpenKeyConfig()
         {
@@ -179,8 +203,16 @@ namespace RealmShards.UI
                 return;
             }
 
+            _nav?.Deactivate();
             _controls ??= ControlsRebindScreen.EnsurePresent(transform, ctx.InputActions, ctx.Bindings);
-            _controls.Show();
+            _controls.Show(onClosed: () =>
+            {
+                if (IsVisible)
+                {
+                    _nav.Configure(_navEntries, onCancel: Hide, startIndex: 0);
+                    _nav.Activate(0);
+                }
+            });
             _status.text = "Rebind keys, then press Back.";
         }
 
@@ -233,6 +265,16 @@ namespace RealmShards.UI
             }
         }
 
+        private void ScrollToRow(RectTransform row)
+        {
+            if (_scroll == null || _contentRt == null || row == null) return;
+            Canvas.ForceUpdateCanvases();
+            float contentH = Mathf.Max(1f, _contentRt.rect.height - _scroll.viewport.rect.height);
+            float rowY = -row.anchoredPosition.y;
+            float norm = Mathf.Clamp01(rowY / Mathf.Max(1f, contentH));
+            _scroll.verticalNormalizedPosition = 1f - norm;
+        }
+
         private float AddHeader(Transform parent, string label, float yTop, float height)
         {
             var row = CreateRow(parent, label, yTop, height);
@@ -259,6 +301,14 @@ namespace RealmShards.UI
             next.onClick.AddListener(() => { onCycle(1); RefreshAll(); });
 
             _rows.Add(new RowBinding { Key = key, ValueText = value });
+            _navEntries.Add(new MenuNavigator.Entry
+            {
+                Visual = row,
+                OnConfirm = () => { onCycle(1); RefreshAll(); },
+                OnLeft = () => { onCycle(-1); RefreshAll(); },
+                OnRight = () => { onCycle(1); RefreshAll(); },
+                OnFocused = () => ScrollToRow(row)
+            });
             return yTop + height;
         }
 
@@ -278,6 +328,13 @@ namespace RealmShards.UI
             btn.onClick.AddListener(() => { toggle(); RefreshAll(); });
 
             _rows.Add(new RowBinding { Key = key, CheckboxFill = fill });
+            _navEntries.Add(new MenuNavigator.Entry
+            {
+                Visual = row,
+                Selectable = btn,
+                OnConfirm = () => { toggle(); RefreshAll(); },
+                OnFocused = () => ScrollToRow(row)
+            });
             return yTop + height;
         }
 
@@ -312,6 +369,22 @@ namespace RealmShards.UI
             slider.onValueChanged.AddListener(v => setValue(v));
 
             _rows.Add(new RowBinding { Key = key, Slider = slider });
+            _navEntries.Add(new MenuNavigator.Entry
+            {
+                Visual = row,
+                Selectable = slider,
+                OnLeft = () =>
+                {
+                    slider.value = Mathf.Clamp01(slider.value - 0.05f);
+                    setValue(slider.value);
+                },
+                OnRight = () =>
+                {
+                    slider.value = Mathf.Clamp01(slider.value + 0.05f);
+                    setValue(slider.value);
+                },
+                OnFocused = () => ScrollToRow(row)
+            });
             return yTop + height;
         }
 
@@ -326,6 +399,14 @@ namespace RealmShards.UI
             text.alignment = TextAnchor.MiddleCenter;
             text.color = Color.white;
             btn.onClick.AddListener(onClick);
+
+            _navEntries.Add(new MenuNavigator.Entry
+            {
+                Visual = row,
+                Selectable = btn,
+                OnConfirm = () => onClick.Invoke(),
+                OnFocused = () => ScrollToRow(row)
+            });
             return yTop + height;
         }
 

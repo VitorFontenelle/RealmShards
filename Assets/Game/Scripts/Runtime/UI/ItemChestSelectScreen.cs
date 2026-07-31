@@ -21,6 +21,10 @@ namespace RealmShards.UI
         private Text _currentSelection;
         private int _playerIndex;
         private ItemCategory? _activeCategory;
+        private MenuNavigator _nav;
+        private Button _closeButton;
+        private Button _backButton;
+        private readonly List<Button> _categoryButtons = new List<Button>();
 
         public event System.Action Closed;
 
@@ -74,11 +78,11 @@ namespace RealmShards.UI
                 new Color(0.75f, 0.78f, 0.85f, 1f),
                 new Vector2(0.08f, 0.06f), new Vector2(0.62f, 0.13f), Vector2.zero, Vector2.zero, UiFonts.MenuRegular);
 
-            var close = UiFactory.AddButton(box.transform, "Close", "DONE",
+            _closeButton = UiFactory.AddButton(box.transform, "Close", "DONE",
                 new Vector2(0.66f, 0.06f), new Vector2(0.92f, 0.13f), Vector2.zero, Vector2.zero,
                 new Color(0.18f, 0.2f, 0.26f, 0.95f), UiFonts.MenuBold);
-            close.GetComponentInChildren<Text>().fontSize = 20;
-            close.onClick.AddListener(Hide);
+            _closeButton.GetComponentInChildren<Text>().fontSize = 20;
+            _closeButton.onClick.AddListener(Hide);
 
             _categoryPanel = new GameObject("CategoryPanel", typeof(RectTransform));
             _categoryPanel.transform.SetParent(box.transform, false);
@@ -102,11 +106,13 @@ namespace RealmShards.UI
             _itemList.offsetMin = Vector2.zero;
             _itemList.offsetMax = Vector2.zero;
 
-            var back = UiFactory.AddButton(_itemPanel.transform, "Back", "BACK",
+            _backButton = UiFactory.AddButton(_itemPanel.transform, "Back", "BACK",
                 new Vector2(0.08f, 0.06f), new Vector2(0.32f, 0.13f), Vector2.zero, Vector2.zero,
                 new Color(0.16f, 0.18f, 0.24f, 0.95f), UiFonts.MenuBold);
-            back.GetComponentInChildren<Text>().fontSize = 18;
-            back.onClick.AddListener(ShowCategories);
+            _backButton.GetComponentInChildren<Text>().fontSize = 18;
+            _backButton.onClick.AddListener(ShowCategories);
+
+            _nav = gameObject.AddComponent<MenuNavigator>();
         }
 
         private void AddCategoryButton(Transform parent, ItemCategory category, ref float yTop)
@@ -117,6 +123,7 @@ namespace RealmShards.UI
                 new Color(0.2f, 0.16f, 0.28f, 0.95f), UiFonts.MenuBold);
             btn.GetComponentInChildren<Text>().fontSize = 22;
             btn.onClick.AddListener(() => ShowItems(category));
+            _categoryButtons.Add(btn);
             yTop = yMin - 0.04f;
         }
 
@@ -132,6 +139,7 @@ namespace RealmShards.UI
 
         public void Hide()
         {
+            _nav?.Deactivate();
             if (_root != null)
                 _root.SetActive(false);
             _activeCategory = null;
@@ -144,6 +152,7 @@ namespace RealmShards.UI
             if (_categoryPanel != null) _categoryPanel.SetActive(true);
             if (_itemPanel != null) _itemPanel.SetActive(false);
             Refresh();
+            ActivateCategoryNav();
         }
 
         private void ShowItems(ItemCategory category)
@@ -153,12 +162,71 @@ namespace RealmShards.UI
             if (_itemPanel != null) _itemPanel.SetActive(true);
             RebuildItemList(category);
             Refresh();
+            ActivateItemNav();
+        }
+
+        private void ActivateCategoryNav()
+        {
+            var entries = new List<MenuNavigator.Entry>();
+            for (int i = 0; i < _categoryButtons.Count; i++)
+            {
+                var btn = _categoryButtons[i];
+                entries.Add(new MenuNavigator.Entry
+                {
+                    Visual = btn.GetComponent<RectTransform>(),
+                    Selectable = btn,
+                    OnConfirm = () => btn.onClick.Invoke()
+                });
+            }
+
+            entries.Add(new MenuNavigator.Entry
+            {
+                Visual = _closeButton.GetComponent<RectTransform>(),
+                Selectable = _closeButton,
+                OnConfirm = Hide
+            });
+
+            _nav.Configure(entries, onCancel: Hide, startIndex: 0);
+            _nav.Activate(0);
+        }
+
+        private void ActivateItemNav()
+        {
+            var entries = new List<MenuNavigator.Entry>();
+            for (int i = 0; i < _itemList.childCount; i++)
+            {
+                var child = _itemList.GetChild(i);
+                var btn = child.GetComponent<Button>();
+                if (btn == null) continue;
+                entries.Add(new MenuNavigator.Entry
+                {
+                    Visual = child as RectTransform,
+                    Selectable = btn,
+                    OnConfirm = () => btn.onClick.Invoke()
+                });
+            }
+
+            entries.Add(new MenuNavigator.Entry
+            {
+                Visual = _backButton.GetComponent<RectTransform>(),
+                Selectable = _backButton,
+                OnConfirm = ShowCategories
+            });
+            entries.Add(new MenuNavigator.Entry
+            {
+                Visual = _closeButton.GetComponent<RectTransform>(),
+                Selectable = _closeButton,
+                OnConfirm = Hide
+            });
+
+            _nav.Configure(entries, onCancel: ShowCategories, startIndex: 0);
+            _nav.Activate(0);
         }
 
         private void RebuildItemList(ItemCategory category)
         {
             for (int i = _itemList.childCount - 1; i >= 0; i--)
-                Destroy(_itemList.GetChild(i).gameObject);
+                Object.DestroyImmediate(_itemList.GetChild(i).gameObject);
 
             var ctx = GameContext.Instance;
             if (ctx?.Save?.Current?.meta == null) return;
@@ -178,7 +246,7 @@ namespace RealmShards.UI
 
             if (options.Count == 0)
             {
-                var empty = UiFactory.AddText(_itemList, "Empty", "No unlocked items in this category yet.",
+                UiFactory.AddText(_itemList, "Empty", "No unlocked items in this category yet.",
                     18, TextAnchor.MiddleCenter, new Color(0.75f, 0.75f, 0.8f, 1f),
                     new Vector2(0f, 0.35f), new Vector2(1f, 0.55f), Vector2.zero, Vector2.zero, UiFonts.MenuRegular);
                 return;
@@ -221,7 +289,11 @@ namespace RealmShards.UI
 
             PlayerItemLoadoutService.SetSelectedItem(_playerIndex, itemId, ctx.Save);
             if (_activeCategory.HasValue)
+            {
                 RebuildItemList(_activeCategory.Value);
+                ActivateItemNav();
+            }
+
             Refresh();
         }
 
@@ -245,7 +317,7 @@ namespace RealmShards.UI
                 _currentSelection.text = $"Selected: {def?.DisplayName ?? selectedId}";
             }
 
-            _status.text = "Choose one item for this run. Selecting another replaces your pick.";
+            _status.text = "Up/Down · Confirm · Esc/B back.";
         }
 
         private static void StretchFull(RectTransform rt)

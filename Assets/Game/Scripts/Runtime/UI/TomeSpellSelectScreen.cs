@@ -17,6 +17,9 @@ namespace RealmShards.UI
         private Text _status;
         private int _playerIndex;
         private readonly Dictionary<AbilitySlotRole, Text> _valueLabels = new Dictionary<AbilitySlotRole, Text>();
+        private readonly List<MenuNavigator.Entry> _navEntries = new List<MenuNavigator.Entry>();
+        private MenuNavigator _nav;
+        private Button _closeButton;
 
         public event System.Action Closed;
 
@@ -72,34 +75,60 @@ namespace RealmShards.UI
                 new Color(0.75f, 0.78f, 0.85f, 1f),
                 new Vector2(0.08f, 0.06f), new Vector2(0.62f, 0.14f), Vector2.zero, Vector2.zero, UiFonts.MenuRegular);
 
-            var close = UiFactory.AddButton(box.transform, "Close", "DONE",
+            _closeButton = UiFactory.AddButton(box.transform, "Close", "DONE",
                 new Vector2(0.66f, 0.06f), new Vector2(0.92f, 0.14f), Vector2.zero, Vector2.zero,
                 new Color(0.18f, 0.2f, 0.26f, 0.95f), UiFonts.MenuBold);
-            close.GetComponentInChildren<Text>().fontSize = 20;
-            close.onClick.AddListener(Hide);
+            _closeButton.GetComponentInChildren<Text>().fontSize = 20;
+            _closeButton.onClick.AddListener(Hide);
+
+            _navEntries.Add(new MenuNavigator.Entry
+            {
+                Visual = _closeButton.GetComponent<RectTransform>(),
+                Selectable = _closeButton,
+                OnConfirm = Hide
+            });
+
+            _nav = gameObject.AddComponent<MenuNavigator>();
         }
 
         private void AddRoleRow(Transform parent, AbilitySlotRole role, string label, ref float yTop)
         {
             float yMin = yTop - 0.14f;
-            UiFactory.AddText(parent, $"{role}Label", label, 18, TextAnchor.MiddleLeft, Color.white,
-                new Vector2(0.08f, yMin), new Vector2(0.42f, yTop), Vector2.zero, Vector2.zero, UiFonts.MenuRegular);
+            var rowGo = new GameObject($"{role}Row", typeof(RectTransform));
+            rowGo.transform.SetParent(parent, false);
+            var rowRt = rowGo.GetComponent<RectTransform>();
+            rowRt.anchorMin = new Vector2(0.08f, yMin);
+            rowRt.anchorMax = new Vector2(0.96f, yTop);
+            rowRt.offsetMin = Vector2.zero;
+            rowRt.offsetMax = Vector2.zero;
 
-            var value = UiFactory.AddText(parent, $"{role}Value", "-", 18, TextAnchor.MiddleRight, Color.white,
-                new Vector2(0.42f, yMin), new Vector2(0.78f, yTop), Vector2.zero, Vector2.zero, UiFonts.MenuRegular);
+            UiFactory.AddText(rowGo.transform, "Label", label, 18, TextAnchor.MiddleLeft, Color.white,
+                new Vector2(0f, 0f), new Vector2(0.38f, 1f), Vector2.zero, Vector2.zero, UiFonts.MenuRegular);
+
+            var value = UiFactory.AddText(rowGo.transform, "Value", "-", 18, TextAnchor.MiddleRight, Color.white,
+                new Vector2(0.38f, 0f), new Vector2(0.72f, 1f), Vector2.zero, Vector2.zero, UiFonts.MenuRegular);
             _valueLabels[role] = value;
 
-            var prev = UiFactory.AddButton(parent, $"{role}Prev", "<",
-                new Vector2(0.80f, yMin), new Vector2(0.88f, yTop), Vector2.zero, Vector2.zero,
+            var prev = UiFactory.AddButton(rowGo.transform, "Prev", "<",
+                new Vector2(0.74f, 0.1f), new Vector2(0.86f, 0.9f), Vector2.zero, Vector2.zero,
                 new Color(0.16f, 0.18f, 0.24f, 0.9f), UiFonts.MenuBold);
             prev.GetComponentInChildren<Text>().fontSize = 18;
             prev.onClick.AddListener(() => Cycle(role, -1));
 
-            var next = UiFactory.AddButton(parent, $"{role}Next", ">",
-                new Vector2(0.88f, yMin), new Vector2(0.96f, yTop), Vector2.zero, Vector2.zero,
+            var next = UiFactory.AddButton(rowGo.transform, "Next", ">",
+                new Vector2(0.86f, 0.1f), new Vector2(0.98f, 0.9f), Vector2.zero, Vector2.zero,
                 new Color(0.16f, 0.18f, 0.24f, 0.9f), UiFonts.MenuBold);
             next.GetComponentInChildren<Text>().fontSize = 18;
             next.onClick.AddListener(() => Cycle(role, 1));
+
+            AbilitySlotRole captured = role;
+            _navEntries.Add(new MenuNavigator.Entry
+            {
+                Visual = rowRt,
+                OnConfirm = () => Cycle(captured, 1),
+                OnLeft = () => Cycle(captured, -1),
+                OnRight = () => Cycle(captured, 1)
+            });
 
             yTop = yMin - 0.02f;
         }
@@ -111,10 +140,13 @@ namespace RealmShards.UI
             gameObject.SetActive(true);
             GameContext.EnsureEventSystem();
             Refresh();
+            _nav.Configure(_navEntries, onCancel: Hide, startIndex: 0);
+            _nav.Activate(0);
         }
 
         public void Hide()
         {
+            _nav?.Deactivate();
             if (_root != null)
                 _root.SetActive(false);
             Closed?.Invoke();
@@ -170,7 +202,7 @@ namespace RealmShards.UI
                     : ctx.Content.GetDisplayName(id, id);
             }
 
-            _status.text = "Signature starts at Signature tier · Ultimate starts at Ultimate tier.";
+            _status.text = "Left/Right or Confirm cycles · Esc/B closes.";
         }
     }
 }

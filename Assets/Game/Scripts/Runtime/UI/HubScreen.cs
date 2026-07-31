@@ -37,7 +37,10 @@ namespace RealmShards.UI
         private Image _transitionFlash;
         private Text _pressPrompt;
         private Button _playButton;
+        private Button _settingsButton;
+        private Button _quitButton;
         private RectTransform[] _menuButtonRects;
+        private MenuNavigator _menuNav;
         private int _preCapital = 2;
         private float _promptBlinkTimer;
         private Coroutine _transitionRoutine;
@@ -143,31 +146,22 @@ namespace RealmShards.UI
                 new Vector2(0.34f, 0.44f), new Vector2(0.66f, 0.54f), MenuTextNormal, MenuTextHighlight);
             _playButton.onClick.AddListener(ShowLobby);
 
-            var settings = UiFactory.AddMenuTextButton(buttonsRoot.transform, "Settings", "Settings",
+            _settingsButton = UiFactory.AddMenuTextButton(buttonsRoot.transform, "Settings", "Settings",
                 new Vector2(0.34f, 0.34f), new Vector2(0.66f, 0.44f), MenuTextNormal, MenuTextHighlight);
-            settings.onClick.AddListener(OpenSettings);
+            _settingsButton.onClick.AddListener(OpenSettings);
 
-            var quit = UiFactory.AddMenuTextButton(buttonsRoot.transform, "Quit", "Quit",
+            _quitButton = UiFactory.AddMenuTextButton(buttonsRoot.transform, "Quit", "Quit",
                 new Vector2(0.34f, 0.24f), new Vector2(0.66f, 0.34f), MenuTextNormal, MenuTextHighlight);
-            quit.onClick.AddListener(GameQuit.Request);
+            _quitButton.onClick.AddListener(GameQuit.Request);
 
             _menuButtonRects = new[]
             {
                 _playButton.GetComponent<RectTransform>(),
-                settings.GetComponent<RectTransform>(),
-                quit.GetComponent<RectTransform>()
+                _settingsButton.GetComponent<RectTransform>(),
+                _quitButton.GetComponent<RectTransform>()
             };
 
-            var nav = new Navigation { mode = Navigation.Mode.Explicit };
-            nav.selectOnDown = settings;
-            _playButton.navigation = nav;
-            nav = new Navigation { mode = Navigation.Mode.Explicit };
-            nav.selectOnUp = _playButton;
-            nav.selectOnDown = quit;
-            settings.navigation = nav;
-            nav = new Navigation { mode = Navigation.Mode.Explicit };
-            nav.selectOnUp = settings;
-            quit.navigation = nav;
+            _menuNav = gameObject.AddComponent<MenuNavigator>();
 
             var flashGo = new GameObject("TransitionFlash", typeof(RectTransform), typeof(Image));
             flashGo.transform.SetParent(root, false);
@@ -237,8 +231,7 @@ namespace RealmShards.UI
 
             _state = HubState.Menu;
             GameContext.EnsureEventSystem();
-            if (_playButton != null)
-                _playButton.Select();
+            ActivateMenuNav();
 
             _transitionRoutine = null;
         }
@@ -305,7 +298,41 @@ namespace RealmShards.UI
 
         private void OpenSettings()
         {
-            OptionsScreen.EnsurePresent(transform).Show();
+            _menuNav?.Deactivate();
+            OptionsScreen.EnsurePresent(transform).Show(onClosed: ActivateMenuNavIfMenu);
+        }
+
+        private void ActivateMenuNav()
+        {
+            if (_menuNav == null || _state != HubState.Menu) return;
+            _menuNav.Configure(new[]
+            {
+                new MenuNavigator.Entry
+                {
+                    Visual = _menuButtonRects[0],
+                    Selectable = _playButton,
+                    OnConfirm = () => _playButton.onClick.Invoke()
+                },
+                new MenuNavigator.Entry
+                {
+                    Visual = _menuButtonRects[1],
+                    Selectable = _settingsButton,
+                    OnConfirm = () => _settingsButton.onClick.Invoke()
+                },
+                new MenuNavigator.Entry
+                {
+                    Visual = _menuButtonRects[2],
+                    Selectable = _quitButton,
+                    OnConfirm = () => _quitButton.onClick.Invoke()
+                }
+            }, startIndex: 0);
+            _menuNav.Activate(0);
+        }
+
+        private void ActivateMenuNavIfMenu()
+        {
+            if (_state == HubState.Menu)
+                ActivateMenuNav();
         }
 
         private static void StretchFull(RectTransform rt)
@@ -334,6 +361,7 @@ namespace RealmShards.UI
         private void ShowLobby()
         {
             _state = HubState.Lobby;
+            _menuNav?.Deactivate();
             _attractPanel.SetActive(false);
             _menuPanel.SetActive(false);
 

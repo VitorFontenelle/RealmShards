@@ -164,8 +164,10 @@ namespace RealmShards.UI
         {
             private Text _text;
             private Outline _outline;
+            private RectTransform _buttonRt;
             private Color _normal;
             private Color _highlight;
+            private Vector3 _baseScale = Vector3.one;
 
             public void Initialize(Text text, Outline outline, Color normal, Color highlight)
             {
@@ -173,6 +175,12 @@ namespace RealmShards.UI
                 _outline = outline;
                 _normal = normal;
                 _highlight = highlight;
+                if (text != null && text.transform.parent != null)
+                {
+                    _buttonRt = text.transform.parent as RectTransform;
+                    if (_buttonRt != null)
+                        _baseScale = _buttonRt.localScale;
+                }
             }
 
             public void OnPointerEnter(UnityEngine.EventSystems.PointerEventData eventData) => ApplyHighlight();
@@ -184,12 +192,14 @@ namespace RealmShards.UI
             {
                 if (_text != null) _text.color = _highlight;
                 if (_outline != null) _outline.effectColor = new Color(0.75f, 0.45f, 1f, 0.85f);
+                if (_buttonRt != null) _buttonRt.localScale = _baseScale * 1.08f;
             }
 
             private void ApplyNormal()
             {
                 if (_text != null) _text.color = _normal;
                 if (_outline != null) _outline.effectColor = new Color(0.55f, 0.25f, 0.95f, 0.35f);
+                if (_buttonRt != null) _buttonRt.localScale = _baseScale;
             }
         }
     }

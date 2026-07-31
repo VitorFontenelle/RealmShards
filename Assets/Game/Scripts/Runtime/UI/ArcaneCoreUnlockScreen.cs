@@ -1,6 +1,7 @@
 using RealmShards.Core;
 using RealmShards.Magic;
 using RealmShards.Save;
+using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UI;
 
@@ -58,6 +59,7 @@ namespace RealmShards.UI
             }
 
             float y = 0.72f;
+            var navEntries = new List<MenuNavigator.Entry>();
             for (int i = 0; i < abilityIds.Length; i++)
             {
                 string id = abilityIds[i];
@@ -90,6 +92,12 @@ namespace RealmShards.UI
                         vestigeLabel.text = fail ?? "Cannot unlock.";
                     }
                 });
+                navEntries.Add(new MenuNavigator.Entry
+                {
+                    Visual = btn.GetComponent<RectTransform>(),
+                    Selectable = btn,
+                    OnConfirm = () => btn.onClick.Invoke()
+                });
                 y -= 0.09f;
             }
 
@@ -97,6 +105,16 @@ namespace RealmShards.UI
                 new Vector2(0.35f, 0.06f), new Vector2(0.65f, 0.14f), Vector2.zero, Vector2.zero,
                 new Color(0.2f, 0.45f, 0.3f, 1f));
             cont.onClick.AddListener(Close);
+            navEntries.Add(new MenuNavigator.Entry
+            {
+                Visual = cont.GetComponent<RectTransform>(),
+                Selectable = cont,
+                OnConfirm = Close
+            });
+
+            var nav = gameObject.AddComponent<MenuNavigator>();
+            nav.Configure(navEntries, onCancel: Close, startIndex: navEntries.Count - 1);
+            nav.Activate(navEntries.Count - 1);
         }
 
         private void Close()

@@ -1,4 +1,5 @@
 using System.Collections;
+using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.EventSystems;
 using UnityEngine.InputSystem;
@@ -27,6 +28,9 @@ namespace RealmShards.UI
         private Text _list;
         private Coroutine _rebindRoutine;
         private InputActionRebindingExtensions.RebindingOperation _operation;
+        private MenuNavigator _nav;
+        private readonly List<MenuNavigator.Entry> _navEntries = new List<MenuNavigator.Entry>();
+        private System.Action _onClosed;
 
         public static ControlsRebindScreen EnsurePresent(Transform parent, InputActionAsset actions, BindingOverridesService bindings)
         {
@@ -84,6 +88,12 @@ namespace RealmShards.UI
                     new Color(0.16f, 0.22f, 0.3f, 1f));
                 btn.GetComponentInChildren<Text>().fontSize = 18;
                 btn.onClick.AddListener(() => StartRebind(captured));
+                _navEntries.Add(new MenuNavigator.Entry
+                {
+                    Visual = btn.GetComponent<RectTransform>(),
+                    Selectable = btn,
+                    OnConfirm = () => StartRebind(captured)
+                });
                 y -= 0.048f;
             }
 
@@ -91,25 +101,45 @@ namespace RealmShards.UI
                 new Vector2(0.08f, 0.04f), new Vector2(0.32f, 0.12f), Vector2.zero, Vector2.zero,
                 new Color(0.4f, 0.25f, 0.2f, 1f));
             reset.onClick.AddListener(OnReset);
+            _navEntries.Add(new MenuNavigator.Entry
+            {
+                Visual = reset.GetComponent<RectTransform>(),
+                Selectable = reset,
+                OnConfirm = OnReset
+            });
 
             var close = UiFactory.AddButton(_panel.transform, "Close", "Back",
                 new Vector2(0.68f, 0.04f), new Vector2(0.92f, 0.12f), Vector2.zero, Vector2.zero);
             close.onClick.AddListener(Hide);
+            _navEntries.Add(new MenuNavigator.Entry
+            {
+                Visual = close.GetComponent<RectTransform>(),
+                Selectable = close,
+                OnConfirm = Hide
+            });
 
+            _nav = gameObject.AddComponent<MenuNavigator>();
             RefreshList();
         }
 
-        public void Show()
+        public void Show(System.Action onClosed = null)
         {
+            _onClosed = onClosed;
             if (_panel != null) _panel.SetActive(true);
             gameObject.SetActive(true);
             RefreshList();
+            _nav.Configure(_navEntries, onCancel: Hide, startIndex: 0);
+            _nav.Activate(0);
         }
 
         public void Hide()
         {
             CancelRebind();
+            _nav?.Deactivate();
             if (_panel != null) _panel.SetActive(false);
+            var closed = _onClosed;
+            _onClosed = null;
+            closed?.Invoke();
         }
 
         private void OnReset()
@@ -140,6 +170,7 @@ namespace RealmShards.UI
             }
 
             _status.text = $"Rebinding {actionName}… press a button (Esc / B cancel)";
+            _nav?.Deactivate();
             action.Disable();
             _operation = action.PerformInteractiveRebinding(bindingIndex)
                 .WithControlsExcluding("<Mouse>/position")
@@ -157,6 +188,7 @@ namespace RealmShards.UI
                     _operation?.Dispose();
                     _operation = null;
                     RefreshList();
+                    RestoreNav();
                 })
                 .OnCancel(op =>
                 {
@@ -164,8 +196,16 @@ namespace RealmShards.UI
                     _status.text = "Rebind cancelled.";
                     _operation?.Dispose();
                     _operation = null;
+                    RestoreNav();
                 })
                 .Start();
+        }
+
+        private void RestoreNav()
+        {
+            if (_panel == null || !_panel.activeSelf) return;
+            _nav.Configure(_navEntries, onCancel: Hide, startIndex: 0);
+            _nav.Activate(0);
         }
 
         private static int FindPreferredBindingIndex(InputAction action)
