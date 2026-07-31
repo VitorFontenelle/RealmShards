@@ -200,12 +200,28 @@ namespace RealmShards.Save
             if (data.version < 7)
             {
                 PlayerLoadoutService.EnsureLoadouts(data.meta);
-                PlayerBuildService.EnsureBanks(data.meta);
+                PlayerBuildService.EnsureBank(data.meta);
+            }
+
+            if (data.version < 8)
+            {
+                PlayerBuildService.EnsureBank(data.meta);
+                MigrateLegacyBuildBanks(data.meta);
             }
 
             data.meta.decade = data.meta.year / 10;
             data.version = SaveData.CurrentVersion;
             return data;
+        }
+
+        private static void MigrateLegacyBuildBanks(MetaProgressionData meta)
+        {
+            if (meta.sharedBuildBank != null && !meta.sharedBuildBank.slot0.IsEmpty)
+                return;
+
+            // JsonUtility drops unknown fields on load, so legacy per-player banks are only present
+            // when upgrading from v7 within the same session. Ensure a clean shared bank otherwise.
+            meta.sharedBuildBank ??= new SharedBuildBank();
         }
 
         private static void EnsureCity(System.Collections.Generic.List<string> list, string id)

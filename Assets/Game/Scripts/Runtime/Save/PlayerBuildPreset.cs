@@ -73,15 +73,16 @@ namespace RealmShards.Save
     }
 
     [Serializable]
-    public sealed class PlayerBuildBank
+    public sealed class SharedBuildBank
     {
-        public const int SlotCount = 5;
+        public const int SlotCount = 6;
 
         public PlayerBuildPreset slot0 = new PlayerBuildPreset();
         public PlayerBuildPreset slot1 = new PlayerBuildPreset();
         public PlayerBuildPreset slot2 = new PlayerBuildPreset();
         public PlayerBuildPreset slot3 = new PlayerBuildPreset();
         public PlayerBuildPreset slot4 = new PlayerBuildPreset();
+        public PlayerBuildPreset slot5 = new PlayerBuildPreset();
 
         public PlayerBuildPreset GetSlot(int index) => index switch
         {
@@ -90,6 +91,7 @@ namespace RealmShards.Save
             2 => slot2,
             3 => slot3,
             4 => slot4,
+            5 => slot5,
             _ => slot0
         };
     }

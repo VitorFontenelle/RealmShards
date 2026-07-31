@@ -6,27 +6,24 @@ namespace RealmShards.Progression
 {
     public static class PlayerBuildService
     {
-        public const int SlotCount = PlayerBuildBank.SlotCount;
+        public const int SlotCount = SharedBuildBank.SlotCount;
         public const int MaxPlayers = 4;
 
-        public static void EnsureBanks(MetaProgressionData meta)
+        public static void EnsureBank(MetaProgressionData meta)
         {
-            meta.playerBuildBanks ??= new System.Collections.Generic.List<PlayerBuildBank>();
-            while (meta.playerBuildBanks.Count < MaxPlayers)
-                meta.playerBuildBanks.Add(new PlayerBuildBank());
+            meta.sharedBuildBank ??= new SharedBuildBank();
         }
 
-        public static PlayerBuildBank GetBank(MetaProgressionData meta, int playerIndex)
+        public static SharedBuildBank GetBank(MetaProgressionData meta)
         {
-            EnsureBanks(meta);
-            playerIndex = Mathf.Clamp(playerIndex, 0, MaxPlayers - 1);
-            return meta.playerBuildBanks[playerIndex];
+            EnsureBank(meta);
+            return meta.sharedBuildBank;
         }
 
-        public static PlayerBuildPreset GetPreset(MetaProgressionData meta, int playerIndex, int slotIndex)
+        public static PlayerBuildPreset GetPreset(MetaProgressionData meta, int slotIndex)
         {
             slotIndex = Mathf.Clamp(slotIndex, 0, SlotCount - 1);
-            return GetBank(meta, playerIndex).GetSlot(slotIndex);
+            return GetBank(meta).GetSlot(slotIndex);
         }
 
         public static void SaveCurrentBuild(int playerIndex, int slotIndex, ISaveService save)
@@ -35,29 +32,30 @@ namespace RealmShards.Progression
             var meta = save.Current.meta;
             PlayerLoadoutService.EnsureLoadouts(meta);
             var loadout = PlayerLoadoutService.GetLoadout(meta, playerIndex);
-            GetPreset(meta, playerIndex, slotIndex).CopyFrom(loadout);
+            GetPreset(meta, slotIndex).CopyFrom(loadout);
             save.Save();
         }
 
-        public static void DressBuild(int playerIndex, int slotIndex, ISaveService save)
+        public static void DressBuild(int slotIndex, ISaveService save)
         {
             if (save?.Current?.meta == null) return;
             var meta = save.Current.meta;
             PlayerLoadoutService.EnsureLoadouts(meta);
-            var preset = GetPreset(meta, playerIndex, slotIndex);
+            var preset = GetPreset(meta, slotIndex);
             if (preset.IsEmpty)
                 return;
 
-            var loadout = PlayerLoadoutService.GetLoadout(meta, playerIndex);
-            preset.ApplyTo(loadout);
+            for (int i = 0; i < MaxPlayers; i++)
+                preset.ApplyTo(PlayerLoadoutService.GetLoadout(meta, i));
+
             PlayerLoadoutService.MirrorPrimaryToLegacy(meta);
             save.Save();
         }
 
-        public static void DeleteBuild(int playerIndex, int slotIndex, ISaveService save)
+        public static void DeleteBuild(int slotIndex, ISaveService save)
         {
             if (save?.Current?.meta == null) return;
-            GetPreset(save.Current.meta, playerIndex, slotIndex).Clear();
+            GetPreset(save.Current.meta, slotIndex).Clear();
             save.Save();
         }
 
