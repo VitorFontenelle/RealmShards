@@ -194,7 +194,7 @@ namespace RealmShards.UI
             }
         }
 
-        private static IEnumerator ClaimEffectRoutine(ItemSlotView slot)
+        private IEnumerator ClaimEffectRoutine(ItemSlotView slot)
         {
             if (slot.BobRoutine != null)
             {
