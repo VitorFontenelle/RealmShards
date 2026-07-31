@@ -76,6 +76,24 @@ namespace RealmShards.Progression
             }
         }
 
+        public bool IsItemUnlocked(string itemId) =>
+            PlayerItemLoadoutService.IsItemUnlocked(_save.Current.meta, itemId);
+
+        public void UnlockItem(string itemId, bool saveImmediately = true)
+        {
+            if (string.IsNullOrEmpty(itemId))
+                return;
+
+            var list = _save.Current.meta.unlockedItemIds;
+            list ??= _save.Current.meta.unlockedItemIds = new System.Collections.Generic.List<string>();
+            if (!list.Contains(itemId))
+            {
+                list.Add(itemId);
+                if (saveImmediately)
+                    _save.Save();
+            }
+        }
+
         /// <summary>
         /// Spend Arcane Vestiges to permanently unlock an ability. No duplicate spend.
         /// </summary>

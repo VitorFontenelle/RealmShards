@@ -10,6 +10,7 @@ namespace RealmShards.Save
         public string dashId = ContentIdDefaults.AbilityDash;
         public string signatureId = string.Empty;
         public string ultimateId = string.Empty;
+        public string selectedItemId = string.Empty;
         public int signatureTier = (int)AbilityPowerTier.Signature;
         public int ultimateTier = (int)AbilityPowerTier.Ultimate;
 

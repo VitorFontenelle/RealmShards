@@ -20,6 +20,8 @@ namespace RealmShards.UI
 
         public event System.Action Closed;
 
+        public bool IsVisible => _root != null && _root.activeSelf;
+
         public static TomeSpellSelectScreen EnsurePresent(Transform parent)
         {
             var existing = Object.FindFirstObjectByType<TomeSpellSelectScreen>();

@@ -63,6 +63,7 @@ namespace RealmShards.Runs
         public WorldRoutePlan RoutePlan { get; private set; }
         public IReadOnlyList<string> LoadoutAbilityIds { get; private set; }
         public IReadOnlyList<IReadOnlyList<string>> LoadoutsByPlayer { get; private set; }
+        public IReadOnlyList<string> SelectedItemIdsByPlayer { get; private set; }
         public RunOutcome LastOutcome { get; private set; }
 
         public void Begin(
@@ -73,7 +74,8 @@ namespace RealmShards.Runs
             WorldRoutePlan plan = null,
             int worldNodeIndex = 0,
             IList<string> loadout = null,
-            IList<IReadOnlyList<string>> loadoutsByPlayer = null)
+            IList<IReadOnlyList<string>> loadoutsByPlayer = null,
+            IList<string> selectedItemsByPlayer = null)
         {
             IsActive = true;
             CityId = cityId;
@@ -92,6 +94,9 @@ namespace RealmShards.Runs
             LoadoutsByPlayer = loadoutsByPlayer != null
                 ? new List<IReadOnlyList<string>>(loadoutsByPlayer)
                 : new List<IReadOnlyList<string>>();
+            SelectedItemIdsByPlayer = selectedItemsByPlayer != null
+                ? new List<string>(selectedItemsByPlayer)
+                : new List<string>();
             LastOutcome = null;
         }
 
@@ -139,6 +144,7 @@ namespace RealmShards.Runs
             RoutePlan = null;
             LoadoutAbilityIds = null;
             LoadoutsByPlayer = null;
+            SelectedItemIdsByPlayer = null;
             LastOutcome = null;
         }
     }

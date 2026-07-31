@@ -18,6 +18,8 @@ namespace RealmShards.World
         private HubLobbyJoinHud _joinHud;
         private TomePedestal _tome;
         private TomeSpellSelectScreen _spellUi;
+        private ItemChestPedestal _chest;
+        private ItemChestSelectScreen _itemUi;
         private LocalCoopLobby _lobby;
         private readonly GameObject[] _avatars = new GameObject[LocalCoopLobby.MaxPlayers];
         private readonly PlayerOverheadHealthBar[] _healthBars = new PlayerOverheadHealthBar[LocalCoopLobby.MaxPlayers];
@@ -43,6 +45,8 @@ namespace RealmShards.World
             _joinHud = HubLobbyJoinHud.EnsurePresent();
             _spellUi = TomeSpellSelectScreen.EnsurePresent(transform);
             _spellUi.Closed += OnSpellUiClosed;
+            _itemUi = ItemChestSelectScreen.EnsurePresent(transform);
+            _itemUi.Closed += OnItemUiClosed;
             RefreshJoinHud();
         }
 
@@ -56,6 +60,8 @@ namespace RealmShards.World
             InputSystem.onDeviceChange -= OnDeviceChange;
             if (_spellUi != null)
                 _spellUi.Closed -= OnSpellUiClosed;
+            if (_itemUi != null)
+                _itemUi.Closed -= OnItemUiClosed;
         }
 
         private void OnSpellUiClosed()
@@ -63,10 +69,16 @@ namespace RealmShards.World
             _tome?.BeginIdleClosed();
         }
 
+        private void OnItemUiClosed()
+        {
+            _chest?.BeginIdleClosed();
+        }
+
         private void Update()
         {
             PollJoinInput();
             PollTomeInteract();
+            PollChestInteract();
             PollExit();
         }
 
@@ -81,6 +93,7 @@ namespace RealmShards.World
         {
             _joinHud?.Hide();
             _spellUi?.Hide();
+            _itemUi?.Hide();
             gameObject.SetActive(false);
         }
 
@@ -91,6 +104,7 @@ namespace RealmShards.World
             _arena = HubLobbyArena.Build(transform);
             SetupCamera();
             _tome = TomePedestal.Create(_arena.Root, _arena.TomeSpawn.position);
+            _chest = ItemChestPedestal.Create(_arena.Root, _arena.ChestSpawn.position);
             _exitCollider = _arena.ExitTrigger.GetComponent<BoxCollider2D>();
         }
 
@@ -237,21 +251,44 @@ namespace RealmShards.World
 
         private void PollTomeInteract()
         {
-            if (_tome == null || _spellUi == null) return;
+            if (_tome == null || _spellUi == null || _itemUi?.IsVisible == true)
+                return;
 
-            int player = -1;
+            if (!TryResolveInteractPlayer(_tome.transform.position, _tome.ContainsPoint, out int player))
+                return;
+
+            _tome.PlayOpen(() => _spellUi.ShowForPlayer(player));
+        }
+
+        private void PollChestInteract()
+        {
+            if (_chest == null || _itemUi == null || _spellUi?.IsVisible == true)
+                return;
+
+            if (!TryResolveInteractPlayer(_chest.transform.position, _chest.ContainsPoint, out int player))
+                return;
+
+            _chest.PlayOpen(() => _itemUi.ShowForPlayer(player));
+        }
+
+        private bool TryResolveInteractPlayer(Vector3 targetPosition, System.Func<Vector2, bool> hitTest, out int player)
+        {
+            player = -1;
+            const float interactRange = 2.2f;
+
             if (Mouse.current != null && Mouse.current.leftButton.wasPressedThisFrame)
             {
                 var world = Camera.main != null
-                    ? Camera.main.ScreenToWorldPoint(Mouse.current.position.ReadValue())
-                    : Vector3.zero;
-                if (_tome.ContainsPoint(world))
-                {
-                    if (_lobby.Claims.TryGetPlayerForDevice(Keyboard.current, out int kbPlayer))
-                        player = kbPlayer;
-                    else
-                        player = FirstJoinedPlayer();
-                }
+                    ? (Vector2)Camera.main.ScreenToWorldPoint(Mouse.current.position.ReadValue())
+                    : Vector2.zero;
+                if (!hitTest(world))
+                    return false;
+
+                if (_lobby.Claims.TryGetPlayerForDevice(Keyboard.current, out int kbPlayer))
+                    player = kbPlayer;
+                else
+                    player = FirstJoinedPlayer();
+                return true;
             }
 
             foreach (var pad in Gamepad.all)
@@ -259,16 +296,13 @@ namespace RealmShards.World
                 if (pad == null || !pad.buttonSouth.wasPressedThisFrame) continue;
                 if (!_lobby.Claims.TryGetPlayerForDevice(pad, out int idx)) continue;
                 if (_avatars[idx] == null) continue;
-                float dist = Vector2.Distance(_avatars[idx].transform.position, _tome.transform.position);
-                if (dist <= 2.2f)
-                {
-                    player = idx;
-                    break;
-                }
+                float dist = Vector2.Distance(_avatars[idx].transform.position, targetPosition);
+                if (dist > interactRange) continue;
+                player = idx;
+                return true;
             }
 
-            if (player < 0) return;
-            _tome.PlayOpen(() => _spellUi.ShowForPlayer(player));
+            return false;
         }
 
         private int FirstJoinedPlayer()

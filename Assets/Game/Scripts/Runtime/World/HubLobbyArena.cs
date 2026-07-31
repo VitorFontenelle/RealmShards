@@ -18,6 +18,7 @@ namespace RealmShards.World
             public RoomBounds Bounds;
             public Transform ExitTrigger;
             public Transform TomeSpawn;
+            public Transform ChestSpawn;
             public Vector3[] PlayerSpawns;
         }
 
@@ -64,6 +65,10 @@ namespace RealmShards.World
             tomeGo.transform.SetParent(baseArena.Root, false);
             tomeGo.transform.position = new Vector3(0f, -1.2f, 0f);
 
+            var chestGo = new GameObject("ChestSpawn");
+            chestGo.transform.SetParent(baseArena.Root, false);
+            chestGo.transform.position = new Vector3(5.2f, -1.2f, 0f);
+
             var spawns = new[]
             {
                 new Vector3(-4.5f, -3.5f, 0f),
@@ -81,6 +86,7 @@ namespace RealmShards.World
                 Bounds = baseArena.Bounds,
                 ExitTrigger = exitGo.transform,
                 TomeSpawn = tomeGo.transform,
+                ChestSpawn = chestGo.transform,
                 PlayerSpawns = spawns
             };
         }

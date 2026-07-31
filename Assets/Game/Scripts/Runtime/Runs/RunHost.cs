@@ -60,6 +60,7 @@ namespace RealmShards.Runs
             var loadout = loadouts.Count > 0
                 ? new List<string>(loadouts[0])
                 : new List<string>(meta.equippedAbilityIds);
+            var selectedItems = PlayerItemLoadoutService.GetAllSelected(meta, localPlayerCount);
             Session.Begin(
                 first.cityId,
                 ContentIdDefaults.RouteWorldMain,
@@ -68,7 +69,8 @@ namespace RealmShards.Runs
                 plan,
                 0,
                 loadout,
-                loadouts);
+                loadouts,
+                selectedItems);
 
             PersistActiveRun();
             _save.Current.settings.localPlayerCount = localPlayerCount;

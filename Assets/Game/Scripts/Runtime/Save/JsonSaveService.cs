@@ -191,6 +191,12 @@ namespace RealmShards.Save
                 PlayerLoadoutService.MirrorPrimaryToLegacy(data.meta);
             }
 
+            if (data.version < 6)
+            {
+                data.meta.unlockedItemIds ??= new List<string>();
+                PlayerLoadoutService.EnsureLoadouts(data.meta);
+            }
+
             data.meta.decade = data.meta.year / 10;
             data.version = SaveData.CurrentVersion;
             return data;
