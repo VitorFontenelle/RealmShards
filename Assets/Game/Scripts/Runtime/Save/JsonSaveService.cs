@@ -178,6 +178,9 @@ namespace RealmShards.Save
                 data.settings.cameraShake = Mathf.Clamp01(data.settings.cameraShake < 0f ? 1f : data.settings.cameraShake);
             }
 
+            if (data.version < 4)
+                data.settings.displayHealthbars = true;
+
             data.meta.decade = data.meta.year / 10;
             data.version = SaveData.CurrentVersion;
             return data;

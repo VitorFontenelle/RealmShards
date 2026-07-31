@@ -156,6 +156,9 @@ namespace RealmShards
 
             Damaged?.Invoke(this, damage);
 
+            if (incoming > 0f && Faction == FactionId.Enemy)
+                Combat.EnemyHealthBarService.NotifyDamaged(this);
+
             if (incoming >= 1f)
             {
                 bool heavy = incoming >= 18f;

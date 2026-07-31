@@ -127,6 +127,7 @@ namespace RealmShards.UI
             y = AddSliderRow(content.transform, "shake", "CAMERA SHAKE", y, rowH, () => SettingsService.Data.cameraShake, SettingsService.SetCameraShake);
             y = AddSliderRow(content.transform, "minimap", "MINIMAP SIZE", y, rowH, () => (SettingsService.Data.minimapSize - 0.6f) / 1f, v => SettingsService.SetMinimapSize(0.6f + v * 1f));
             y = AddToggleRow(content.transform, "numbers", "DISPLAY NUMBERS", y, rowH, () => SettingsService.Data.displayNumbers, SettingsService.ToggleDisplayNumbers);
+            y = AddToggleRow(content.transform, "healthbars", "DISPLAY HEALTHBARS", y, rowH, () => SettingsService.Data.displayHealthbars, SettingsService.ToggleDisplayHealthbars);
             y = AddCycleRow(content.transform, "controller", "CONTROLLER BUTTONS", y, rowH,
                 () => SettingsService.ControllerButtonTypes[SettingsService.Data.controllerButtonType],
                 delta => SettingsService.CycleControllerButtons(delta));
@@ -202,6 +203,7 @@ namespace RealmShards.UI
                         "cursor" => SettingsService.Data.systemCursor,
                         "vfx" => SettingsService.Data.visualEffects,
                         "numbers" => SettingsService.Data.displayNumbers,
+                        "healthbars" => SettingsService.Data.displayHealthbars,
                         _ => row.CheckboxFill.enabled
                     };
 

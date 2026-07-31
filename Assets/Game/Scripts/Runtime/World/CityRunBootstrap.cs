@@ -57,6 +57,12 @@ namespace RealmShards.World
                 dmg.AddComponent<RealmShards.Combat.DamageNumberService>();
             }
 
+            if (FindFirstObjectByType<RealmShards.Combat.EnemyHealthBarService>() == null)
+            {
+                var bars = new GameObject("EnemyHealthBarService");
+                bars.AddComponent<RealmShards.Combat.EnemyHealthBarService>();
+            }
+
             _ = RealmShards.Audio.AudioEventHub.Instance;
 
             SetupCamera();

@@ -29,6 +29,7 @@ namespace RealmShards.Core
 
         public static bool VisualEffectsEnabled => Data == null || Data.visualEffects;
         public static bool DisplayNumbersEnabled => Data == null || Data.displayNumbers;
+        public static bool DisplayHealthbarsEnabled => Data == null || Data.displayHealthbars;
         public static float CameraShakeStrength => Data?.cameraShake ?? 1f;
         public static float MinimapSizeScale => Mathf.Clamp(Data?.minimapSize ?? 1f, 0.6f, 1.6f);
         public static float MasterVolume => Mathf.Clamp01(Data?.masterVolume ?? 1f);
@@ -118,6 +119,13 @@ namespace RealmShards.Core
         {
             if (Data == null) return;
             Data.displayNumbers = !Data.displayNumbers;
+            Save();
+        }
+
+        public static void ToggleDisplayHealthbars()
+        {
+            if (Data == null) return;
+            Data.displayHealthbars = !Data.displayHealthbars;
             Save();
         }
 
@@ -277,6 +285,7 @@ namespace RealmShards.Core
             target.cameraShake = source.cameraShake;
             target.minimapSize = source.minimapSize;
             target.displayNumbers = source.displayNumbers;
+            target.displayHealthbars = source.displayHealthbars;
             target.controllerButtonType = source.controllerButtonType;
             target.languageIndex = source.languageIndex;
         }
