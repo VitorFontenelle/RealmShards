@@ -1,6 +1,8 @@
 using System;
+using System.Collections.Generic;
 using System.IO;
 using RealmShards.Core;
+using RealmShards.Progression;
 using UnityEngine;
 
 namespace RealmShards.Save
@@ -180,6 +182,14 @@ namespace RealmShards.Save
 
             if (data.version < 4)
                 data.settings.displayHealthbars = true;
+
+            if (data.version < 5)
+            {
+                if (!data.meta.unlockedAbilityIds.Contains(ContentIdDefaults.AbilityDash))
+                    data.meta.unlockedAbilityIds.Add(ContentIdDefaults.AbilityDash);
+                PlayerLoadoutService.EnsureLoadouts(data.meta);
+                PlayerLoadoutService.MirrorPrimaryToLegacy(data.meta);
+            }
 
             data.meta.decade = data.meta.year / 10;
             data.version = SaveData.CurrentVersion;

@@ -2,6 +2,7 @@ using System.Collections;
 using RealmShards.Core;
 using RealmShards.Input;
 using RealmShards.Save;
+using RealmShards.World;
 using UnityEngine;
 using UnityEngine.InputSystem;
 using UnityEngine.UI;
@@ -88,47 +89,6 @@ namespace RealmShards.UI
                 UpdatePressPromptBlink();
                 if (WasAnyButtonPressed())
                     BeginMenuTransition();
-                return;
-            }
-
-            if (_state != HubState.Lobby || _lobbyPanel == null || !_lobbyPanel.activeSelf)
-                return;
-
-            // Keyboard Space / Enter join
-            var kb = Keyboard.current;
-            if (kb != null && (kb.spaceKey.wasPressedThisFrame || kb.enterKey.wasPressedThisFrame))
-                TryJoinDevice(kb, "Keyboard&Mouse");
-
-            // Any gamepad A
-            foreach (var pad in Gamepad.all)
-            {
-                if (pad != null && pad.buttonSouth.wasPressedThisFrame)
-                    TryJoinDevice(pad, "Gamepad");
-            }
-
-            // Leave: B on claimed pad / Backspace on KBM
-            if (kb != null && kb.backspaceKey.wasPressedThisFrame)
-            {
-                for (int i = 0; i < LocalCoopLobby.MaxPlayers; i++)
-                {
-                    var s = _lobby.GetSlot(i);
-                    if (s.Joined && s.PrimaryDevice is Keyboard)
-                    {
-                        _lobby.Leave(i);
-                        Refresh();
-                        break;
-                    }
-                }
-            }
-
-            foreach (var pad in Gamepad.all)
-            {
-                if (pad == null || !pad.buttonEast.wasPressedThisFrame) continue;
-                if (_lobby.Claims.TryGetPlayerForDevice(pad, out int idx))
-                {
-                    _lobby.Leave(idx);
-                    Refresh();
-                }
             }
         }
 
@@ -522,8 +482,16 @@ namespace RealmShards.UI
             _state = HubState.Lobby;
             _attractPanel.SetActive(false);
             _menuPanel.SetActive(false);
-            _lobbyPanel.SetActive(true);
-            Refresh();
+            if (_lobbyPanel != null)
+                _lobbyPanel.SetActive(false);
+
+            var canvas = GetComponent<Canvas>();
+            if (canvas != null)
+                canvas.enabled = false;
+
+            var world = HubLobbyWorld.EnsurePresent();
+            world.SetPreCapital(_preCapital);
+            world.Show();
         }
 
         private void UpdatePressPromptBlink()

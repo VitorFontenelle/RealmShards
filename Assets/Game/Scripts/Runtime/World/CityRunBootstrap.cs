@@ -154,7 +154,7 @@ namespace RealmShards.World
                 try { instance.tag = "Player"; } catch { /* ignore */ }
                 NormalizePlayerVisuals(instance);
                 instance.GetComponent<PlayerController>()?.InitializePlayer(index);
-                LoadoutApplier.ApplyFromSession(instance.GetComponent<AbilityCaster>());
+                LoadoutApplier.ApplyFromSession(instance.GetComponent<AbilityCaster>(), index);
                 if (instance.GetComponent<Magic.StatusEffectHost>() == null)
                     instance.AddComponent<Magic.StatusEffectHost>();
 

@@ -135,6 +135,7 @@ namespace RealmShards
 
         private IEnumerator CastRoutine(int slot, AbilityDefinition ability, Vector2 aim)
         {
+            _currentCastSlot = slot;
             _casting = true;
             animator?.PlayCast();
             motor?.SetCastLocked(true);
@@ -170,13 +171,19 @@ namespace RealmShards
             return modifiers != null ? modifiers.ScaleCooldown(cd) : cd;
         }
 
-        private float EffectiveDamage(AbilityDefinition ability)
+        private float EffectiveDamage(AbilityDefinition ability, int slot)
         {
             float dmg = ability.Damage;
-            return modifiers != null ? modifiers.ScaleDamage(dmg) : dmg;
+            if (modifiers != null)
+                dmg = modifiers.ScaleDamage(dmg);
+            var runtime = GetComponent<PlayerLoadoutRuntime>();
+            if (runtime != null)
+                dmg *= runtime.GetDamageMultiplier(slot);
+            return dmg;
         }
 
         private AbilityDefinition _lastCastAbility;
+        private int _currentCastSlot;
 
         private void ExecuteEffect(AbilityDefinition ability, Vector2 aim)
         {
@@ -287,7 +294,7 @@ namespace RealmShards
                 spawn,
                 dir,
                 ctx.Faction,
-                EffectiveDamage(ability),
+                EffectiveDamage(ability, _currentCastSlot),
                 ability.Knockback,
                 ability.ProjectileSpeed,
                 12f,
@@ -325,7 +332,7 @@ namespace RealmShards
                 pos,
                 ctx.AimDirection,
                 ctx.Faction,
-                EffectiveDamage(ability),
+                EffectiveDamage(ability, _currentCastSlot),
                 ability.Knockback,
                 ability.ActiveDuration > 0f ? ability.ActiveDuration : 0.12f,
                 ctx.CasterTransform,

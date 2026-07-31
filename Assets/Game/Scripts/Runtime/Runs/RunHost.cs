@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using RealmShards.Core;
 using RealmShards.Progression;
 using RealmShards.Save;
@@ -54,7 +55,11 @@ namespace RealmShards.Runs
             }
 
             var first = plan.Get(0);
-            var loadout = _save.Current.meta.equippedAbilityIds;
+            var meta = _save.Current.meta;
+            var loadouts = PlayerLoadoutService.GetAllEquipped(meta, localPlayerCount);
+            var loadout = loadouts.Count > 0
+                ? new List<string>(loadouts[0])
+                : new List<string>(meta.equippedAbilityIds);
             Session.Begin(
                 first.cityId,
                 ContentIdDefaults.RouteWorldMain,
@@ -62,7 +67,8 @@ namespace RealmShards.Runs
                 localPlayerCount,
                 plan,
                 0,
-                loadout);
+                loadout,
+                loadouts);
 
             PersistActiveRun();
             _save.Current.settings.localPlayerCount = localPlayerCount;

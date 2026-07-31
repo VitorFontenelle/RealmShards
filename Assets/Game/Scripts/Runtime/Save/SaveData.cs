@@ -9,7 +9,7 @@ namespace RealmShards.Save
     [Serializable]
     public sealed class SaveData
     {
-        public const int CurrentVersion = 4;
+        public const int CurrentVersion = 5;
 
         public int version = CurrentVersion;
         public long lastSavedUnixUtc;
@@ -48,6 +48,8 @@ namespace RealmShards.Save
 
         public string selectedCityId = ContentIdDefaults.CityStarter;
         public int preferredPreCapitalNodes = 2;
+        public bool ultimateSlotUnlocked;
+        public List<PlayerLoadoutData> playerLoadouts = new List<PlayerLoadoutData>();
     }
 
     [Serializable]
@@ -91,7 +93,7 @@ namespace RealmShards.Save
         public const string AbilityBasicBolt = "ability.basic_bolt";
         public const string AbilityArcanePulse = "ability.arcane_pulse";
         public const string AbilityBlinkStep = "ability.blink_step";
-        public const string AbilityDash = "ability.dash";
+        public const string AbilityDash = "ability.blink_step";
 
         public const string AbilityGildedFlare = "ability.gilded_flare";
         public const string AbilityGildedSmite = "ability.gilded_smite";

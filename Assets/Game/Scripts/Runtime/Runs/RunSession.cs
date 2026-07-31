@@ -62,6 +62,7 @@ namespace RealmShards.Runs
         public bool AwaitingArcaneCore { get; set; }
         public WorldRoutePlan RoutePlan { get; private set; }
         public IReadOnlyList<string> LoadoutAbilityIds { get; private set; }
+        public IReadOnlyList<IReadOnlyList<string>> LoadoutsByPlayer { get; private set; }
         public RunOutcome LastOutcome { get; private set; }
 
         public void Begin(
@@ -71,7 +72,8 @@ namespace RealmShards.Runs
             int localPlayerCount,
             WorldRoutePlan plan = null,
             int worldNodeIndex = 0,
-            IList<string> loadout = null)
+            IList<string> loadout = null,
+            IList<IReadOnlyList<string>> loadoutsByPlayer = null)
         {
             IsActive = true;
             CityId = cityId;
@@ -87,6 +89,9 @@ namespace RealmShards.Runs
             LoadoutAbilityIds = loadout != null
                 ? new List<string>(loadout)
                 : new List<string>();
+            LoadoutsByPlayer = loadoutsByPlayer != null
+                ? new List<IReadOnlyList<string>>(loadoutsByPlayer)
+                : new List<IReadOnlyList<string>>();
             LastOutcome = null;
         }
 
@@ -133,6 +138,7 @@ namespace RealmShards.Runs
             AwaitingArcaneCore = false;
             RoutePlan = null;
             LoadoutAbilityIds = null;
+            LoadoutsByPlayer = null;
             LastOutcome = null;
         }
     }
