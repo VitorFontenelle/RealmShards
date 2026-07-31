@@ -108,10 +108,10 @@ namespace RealmShards.UI
                 new Color(0.15f, 0.4f, 0.3f, 0.95f));
             _resumeButton.onClick.AddListener(Resume);
 
-            var controls = UiFactory.AddButton(canvas.transform, "Controls", "Controls",
+            var settings = UiFactory.AddButton(canvas.transform, "Settings", "Settings",
                 new Vector2(0.35f, 0.40f), new Vector2(0.65f, 0.50f), Vector2.zero, Vector2.zero,
                 new Color(0.2f, 0.3f, 0.45f, 0.95f));
-            controls.onClick.AddListener(OpenControls);
+            settings.onClick.AddListener(OpenSettings);
 
             var quit = UiFactory.AddButton(canvas.transform, "Quit", "Quit to Hub",
                 new Vector2(0.35f, 0.28f), new Vector2(0.65f, 0.38f), Vector2.zero, Vector2.zero,
@@ -120,29 +120,25 @@ namespace RealmShards.UI
 
             // Explicit navigation for gamepads
             var nav = new Navigation { mode = Navigation.Mode.Explicit };
-            nav.selectOnDown = controls;
+            nav.selectOnDown = settings;
             _resumeButton.navigation = nav;
             nav = new Navigation { mode = Navigation.Mode.Explicit };
             nav.selectOnUp = _resumeButton;
             nav.selectOnDown = quit;
-            controls.navigation = nav;
+            settings.navigation = nav;
             nav = new Navigation { mode = Navigation.Mode.Explicit };
-            nav.selectOnUp = controls;
+            nav.selectOnUp = settings;
             quit.navigation = nav;
+        }
+
+        private void OpenSettings()
+        {
+            OptionsScreen.EnsurePresent(transform).Show();
         }
 
         private void OpenControls()
         {
-            var ctx = GameContext.Instance;
-            if (ctx?.InputActions == null)
-            {
-                Resume();
-                return;
-            }
-
-            // Keep pause active while rebinding; restore menu selection when closed.
-            var screen = ControlsRebindScreen.EnsurePresent(transform, ctx.InputActions, ctx.Bindings);
-            screen.Show();
+            OpenSettings();
         }
 
         private void QuitToHub()

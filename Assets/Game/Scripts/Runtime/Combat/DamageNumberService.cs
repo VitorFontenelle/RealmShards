@@ -49,6 +49,8 @@ namespace RealmShards.Combat
 
         public static void Spawn(Vector3 worldPos, float amount, bool critical = false)
         {
+            if (!Core.SettingsService.DisplayNumbersEnabled)
+                return;
             Instance.Show(worldPos, amount, critical);
         }
 

@@ -45,7 +45,6 @@ namespace RealmShards.UI
         private int _preCapital = 2;
         private float _promptBlinkTimer;
         private Coroutine _transitionRoutine;
-        private ControlsRebindScreen _controls;
         private LocalCoopLobby _lobby;
         private InputAction _joinAction;
         private InputAction _leaveAction;
@@ -137,8 +136,13 @@ namespace RealmShards.UI
         {
             var root = transform;
 
+            var safe = new GameObject("SafeArea", typeof(RectTransform));
+            safe.transform.SetParent(root, false);
+            var safeRt = safe.GetComponent<RectTransform>();
+            UiScaleConfig.ApplySafeArea(safeRt);
+
             _attractPanel = new GameObject("AttractPanel", typeof(RectTransform));
-            _attractPanel.transform.SetParent(root, false);
+            _attractPanel.transform.SetParent(safe.transform, false);
             StretchFull(_attractPanel.GetComponent<RectTransform>());
             _attractGroup = UiFactory.AddCanvasGroup(_attractPanel);
 
@@ -223,7 +227,7 @@ namespace RealmShards.UI
             quit.navigation = nav;
 
             var flashGo = new GameObject("TransitionFlash", typeof(RectTransform), typeof(Image));
-            flashGo.transform.SetParent(root, false);
+            flashGo.transform.SetParent(safe.transform, false);
             StretchFull(flashGo.GetComponent<RectTransform>());
             _transitionFlash = flashGo.GetComponent<Image>();
             _transitionFlash.color = new Color(FlashColor.r, FlashColor.g, FlashColor.b, 0f);
@@ -231,7 +235,7 @@ namespace RealmShards.UI
             flashGo.SetActive(false);
 
             _lobbyPanel = new GameObject("LobbyPanel", typeof(RectTransform));
-            _lobbyPanel.transform.SetParent(root, false);
+            _lobbyPanel.transform.SetParent(safe.transform, false);
             StretchFull(_lobbyPanel.GetComponent<RectTransform>());
 
             UiFactory.AddPanel(_lobbyPanel.transform, "Background", new Color(0.08f, 0.09f, 0.12f, 1f),
@@ -437,10 +441,7 @@ namespace RealmShards.UI
 
         private void OpenSettings()
         {
-            var ctx = GameContext.Instance;
-            if (ctx == null) return;
-            _controls ??= ControlsRebindScreen.EnsurePresent(transform, ctx.InputActions, ctx.Bindings);
-            _controls.Show();
+            OptionsScreen.EnsurePresent(transform).Show();
         }
 
         private void OpenControls()

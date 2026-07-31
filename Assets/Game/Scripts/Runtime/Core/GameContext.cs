@@ -85,6 +85,8 @@ namespace RealmShards.Core
             else
                 contentDatabase.RebuildLookup();
 
+            SettingsService.Initialize(_save);
+
             SceneManager.sceneLoaded += OnSceneLoaded;
         }
 

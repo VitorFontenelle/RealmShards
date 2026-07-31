@@ -1,3 +1,4 @@
+using RealmShards.Core;
 using RealmShards.World;
 using UnityEngine;
 using UnityEngine.UI;
@@ -16,6 +17,7 @@ namespace RealmShards.UI
         private Color32[] _pixels;
         private ExplorationFog _fog;
         private float _refresh;
+        private RectTransform _panelRt;
 
         public static void EnsurePresent()
         {
@@ -38,8 +40,8 @@ namespace RealmShards.UI
             var canvas = canvasGo.AddComponent<Canvas>();
             canvas.renderMode = RenderMode.ScreenSpaceOverlay;
             canvas.sortingOrder = 40;
-            canvasGo.AddComponent<CanvasScaler>().uiScaleMode = CanvasScaler.ScaleMode.ScaleWithScreenSize;
-            canvasGo.GetComponent<CanvasScaler>().referenceResolution = new Vector2(1280, 800);
+            canvasGo.AddComponent<CanvasScaler>();
+            UiScaleConfig.Apply(canvasGo.GetComponent<CanvasScaler>());
             canvasGo.AddComponent<GraphicRaycaster>();
 
             var panel = new GameObject("MinimapPanel");
@@ -48,8 +50,8 @@ namespace RealmShards.UI
             panelRt.anchorMin = new Vector2(1f, 1f);
             panelRt.anchorMax = new Vector2(1f, 1f);
             panelRt.pivot = new Vector2(1f, 1f);
-            panelRt.anchoredPosition = new Vector2(-16f, -16f);
-            panelRt.sizeDelta = new Vector2(170f, 170f);
+            ApplyLayout(panelRt);
+            _panelRt = panelRt;
             var bg = panel.AddComponent<Image>();
             bg.color = new Color(0f, 0f, 0f, 0.45f);
 
@@ -74,6 +76,9 @@ namespace RealmShards.UI
 
         private void Update()
         {
+            if (_panelRt != null)
+                ApplyLayout(_panelRt);
+
             if (_fog == null)
                 _fog = FindFirstObjectByType<ExplorationFog>();
 
@@ -141,6 +146,13 @@ namespace RealmShards.UI
                     continue;
                 _pixels[y * TexSize + x] = color;
             }
+        }
+
+        private static void ApplyLayout(RectTransform panelRt)
+        {
+            float scale = Core.SettingsService.MinimapSizeScale;
+            panelRt.anchoredPosition = new Vector2(-16f * scale, -16f * scale);
+            panelRt.sizeDelta = new Vector2(170f * scale, 170f * scale);
         }
 
         private void OnDestroy()

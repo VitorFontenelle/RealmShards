@@ -9,7 +9,7 @@ namespace RealmShards.Save
     [Serializable]
     public sealed class SaveData
     {
-        public const int CurrentVersion = 2;
+        public const int CurrentVersion = 3;
 
         public int version = CurrentVersion;
         public long lastSavedUnixUtc;
@@ -57,6 +57,18 @@ namespace RealmShards.Save
         public float musicVolume = 0.8f;
         public float sfxVolume = 1f;
         public int localPlayerCount = 1;
+
+        public int resolutionIndex;
+        public bool fullscreen = true;
+        public float brightness = 1f;
+        public bool vSync = true;
+        public bool systemCursor = true;
+        public bool visualEffects = true;
+        public float cameraShake = 1f;
+        public float minimapSize = 1f;
+        public bool displayNumbers = true;
+        public int controllerButtonType;
+        public int languageIndex;
     }
 
     [Serializable]

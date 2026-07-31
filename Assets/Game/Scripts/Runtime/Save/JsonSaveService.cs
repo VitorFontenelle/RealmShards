@@ -1,5 +1,6 @@
 using System;
 using System.IO;
+using RealmShards.Core;
 using UnityEngine;
 
 namespace RealmShards.Save
@@ -167,6 +168,15 @@ namespace RealmShards.Save
 
             if (data.meta.preferredPreCapitalNodes < 1)
                 data.meta.preferredPreCapitalNodes = 2;
+
+            if (data.version < 3)
+            {
+                data.settings ??= new SettingsData();
+                data.settings.resolutionIndex = Mathf.Clamp(data.settings.resolutionIndex, 0, SettingsService.Resolutions.Length - 1);
+                data.settings.brightness = Mathf.Clamp01(data.settings.brightness <= 0f ? 1f : data.settings.brightness);
+                data.settings.minimapSize = Mathf.Clamp(data.settings.minimapSize <= 0f ? 1f : data.settings.minimapSize, 0.6f, 1.6f);
+                data.settings.cameraShake = Mathf.Clamp01(data.settings.cameraShake < 0f ? 1f : data.settings.cameraShake);
+            }
 
             data.meta.decade = data.meta.year / 10;
             data.version = SaveData.CurrentVersion;

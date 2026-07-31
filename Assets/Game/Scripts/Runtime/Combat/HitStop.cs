@@ -36,6 +36,16 @@ namespace RealmShards.Combat
             if (_pausedByMenu || duration <= 0f)
                 return;
 
+            if (!Core.SettingsService.VisualEffectsEnabled)
+                return;
+
+            var shake = Core.SettingsService.CameraShakeStrength;
+            if (shake <= 0.01f)
+                return;
+
+            duration *= shake;
+            scale = Mathf.Lerp(1f, scale, shake);
+
             EnsureHost();
             if (_routine != null)
                 _host.StopCoroutine(_routine);
