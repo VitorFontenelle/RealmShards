@@ -127,7 +127,8 @@ namespace RealmShards.World
             _wardrobe = WardrobePedestal.Create(_arena.Root, _arena.WardrobeSpawn.position);
             _vendor = ItemsVendorDisplay.Create(_arena.Root, _arena.VendorSpawn.position);
             RefreshVendorDisplay();
-            LobbyTrainingDoll.Create(_arena.Root, _arena.TrainingDollSpawn.position);
+            for (int i = 0; i < _arena.TrainingDollSpawns.Length; i++)
+                LobbyTrainingDoll.Create(_arena.Root, _arena.TrainingDollSpawns[i]);
             _exitCollider = _arena.ExitTrigger.GetComponent<BoxCollider2D>();
         }
 
@@ -140,24 +141,18 @@ namespace RealmShards.World
                 camGo.tag = "MainCamera";
                 cam = camGo.AddComponent<Camera>();
                 camGo.AddComponent<AudioListener>();
-                cam.orthographic = true;
-                cam.orthographicSize = 7.5f;
-                cam.backgroundColor = new Color(0.05f, 0.05f, 0.08f, 1f);
-                cam.clearFlags = CameraClearFlags.SolidColor;
                 cam.transform.position = new Vector3(0f, 0f, -10f);
             }
-            else
-            {
-                cam.orthographic = true;
-                cam.orthographicSize = 7.5f;
-                cam.backgroundColor = new Color(0.05f, 0.05f, 0.08f, 1f);
-                cam.clearFlags = CameraClearFlags.SolidColor;
-            }
+
+            cam.orthographic = true;
+            cam.orthographicSize = 10f;
+            cam.backgroundColor = Color.black;
+            cam.clearFlags = CameraClearFlags.SolidColor;
 
             var shared = cam.GetComponent<SharedOrthoCamera>();
             if (shared == null)
                 shared = cam.gameObject.AddComponent<SharedOrthoCamera>();
-            shared.Configure(_arena.Bounds, _arena.Root, 5f, 12f);
+            shared.Configure(_arena.Bounds, _arena.Root, 8f, 14f);
         }
 
         private void PollJoinInput()
