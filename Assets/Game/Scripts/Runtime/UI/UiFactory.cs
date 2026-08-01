@@ -107,6 +107,40 @@ namespace RealmShards.UI
             return button;
         }
 
+        public static Button AddSpellVialButton(
+            Transform parent,
+            string name,
+            Sprite vialSprite,
+            string label,
+            Vector2 anchorMin,
+            Vector2 anchorMax,
+            Vector2 offsetMin,
+            Vector2 offsetMax,
+            Color? color = null,
+            Font font = null)
+        {
+            var button = AddButton(parent, name, string.Empty, anchorMin, anchorMax, offsetMin, offsetMax, color, font);
+            var labelTransform = button.transform.Find("Label");
+            if (labelTransform != null)
+                Object.Destroy(labelTransform.gameObject);
+
+            AddSprite(button.transform, "Vial", vialSprite,
+                new Vector2(0.03f, 0.12f), new Vector2(0.14f, 0.88f),
+                Vector2.zero, Vector2.zero, preserveAspect: true);
+
+            AddText(button.transform, "Label", label, 20, TextAnchor.MiddleLeft, Color.white,
+                new Vector2(0.16f, 0f), new Vector2(0.98f, 1f), Vector2.zero, Vector2.zero, font ?? UiFonts.MenuBold);
+
+            return button;
+        }
+
+        public static Image AddSpellVialIcon(Transform parent, string name, Sprite vialSprite, Vector2 anchorMin, Vector2 anchorMax)
+        {
+            var image = AddSprite(parent, name, vialSprite, anchorMin, anchorMax, Vector2.zero, Vector2.zero, preserveAspect: true);
+            image.color = Color.white;
+            return image;
+        }
+
         public static Button AddMenuTextButton(Transform parent, string name, string label, Vector2 anchorMin, Vector2 anchorMax, Color normalColor, Color highlightColor)
         {
             var go = new GameObject(name, typeof(RectTransform), typeof(Image), typeof(Button));

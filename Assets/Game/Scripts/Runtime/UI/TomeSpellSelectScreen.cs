@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using RealmShards;
 using RealmShards.Core;
 using RealmShards.Progression;
 using RealmShards.Save;
@@ -12,11 +13,17 @@ namespace RealmShards.UI
     /// </summary>
     public sealed class TomeSpellSelectScreen : MonoBehaviour
     {
+        private sealed class RoleRowUi
+        {
+            public Image VialImage;
+            public Text NameLabel;
+        }
+
         private GameObject _root;
         private Text _title;
         private Text _status;
         private int _playerIndex;
-        private readonly Dictionary<AbilitySlotRole, Text> _valueLabels = new Dictionary<AbilitySlotRole, Text>();
+        private readonly Dictionary<AbilitySlotRole, RoleRowUi> _rows = new Dictionary<AbilitySlotRole, RoleRowUi>();
         private readonly List<MenuNavigator.Entry> _navEntries = new List<MenuNavigator.Entry>();
         private MenuNavigator _nav;
         private Button _closeButton;
@@ -52,8 +59,8 @@ namespace RealmShards.UI
             var box = new GameObject("Box", typeof(RectTransform));
             box.transform.SetParent(canvas.transform, false);
             var boxRt = box.GetComponent<RectTransform>();
-            boxRt.anchorMin = new Vector2(0.22f, 0.18f);
-            boxRt.anchorMax = new Vector2(0.78f, 0.82f);
+            boxRt.anchorMin = new Vector2(0.2f, 0.16f);
+            boxRt.anchorMax = new Vector2(0.8f, 0.84f);
             boxRt.offsetMin = Vector2.zero;
             boxRt.offsetMax = Vector2.zero;
 
@@ -93,21 +100,29 @@ namespace RealmShards.UI
 
         private void AddRoleRow(Transform parent, AbilitySlotRole role, string label, ref float yTop)
         {
-            float yMin = yTop - 0.14f;
+            float yMin = yTop - 0.15f;
             var rowGo = new GameObject($"{role}Row", typeof(RectTransform));
             rowGo.transform.SetParent(parent, false);
             var rowRt = rowGo.GetComponent<RectTransform>();
-            rowRt.anchorMin = new Vector2(0.08f, yMin);
+            rowRt.anchorMin = new Vector2(0.06f, yMin);
             rowRt.anchorMax = new Vector2(0.96f, yTop);
             rowRt.offsetMin = Vector2.zero;
             rowRt.offsetMax = Vector2.zero;
 
-            UiFactory.AddText(rowGo.transform, "Label", label, 18, TextAnchor.MiddleLeft, Color.white,
-                new Vector2(0f, 0f), new Vector2(0.38f, 1f), Vector2.zero, Vector2.zero, UiFonts.MenuRegular);
+            UiFactory.AddText(rowGo.transform, "Label", label, 16, TextAnchor.MiddleLeft, new Color(0.82f, 0.8f, 0.9f, 1f),
+                new Vector2(0f, 0f), new Vector2(0.28f, 1f), Vector2.zero, Vector2.zero, UiFonts.MenuRegular);
 
-            var value = UiFactory.AddText(rowGo.transform, "Value", "-", 18, TextAnchor.MiddleRight, Color.white,
-                new Vector2(0.38f, 0f), new Vector2(0.72f, 1f), Vector2.zero, Vector2.zero, UiFonts.MenuRegular);
-            _valueLabels[role] = value;
+            var vial = UiFactory.AddSpellVialIcon(rowGo.transform, "Vial", null,
+                new Vector2(0.29f, 0.08f), new Vector2(0.4f, 0.92f));
+
+            var name = UiFactory.AddText(rowGo.transform, "SpellName", "(Empty)", 20, TextAnchor.MiddleLeft, Color.white,
+                new Vector2(0.42f, 0f), new Vector2(0.72f, 1f), Vector2.zero, Vector2.zero, UiFonts.MenuBold);
+
+            _rows[role] = new RoleRowUi
+            {
+                VialImage = vial,
+                NameLabel = name
+            };
 
             var prev = UiFactory.AddButton(rowGo.transform, "Prev", "<",
                 new Vector2(0.74f, 0.1f), new Vector2(0.86f, 0.9f), Vector2.zero, Vector2.zero,
@@ -188,18 +203,31 @@ namespace RealmShards.UI
             var loadout = PlayerLoadoutService.GetLoadout(meta, _playerIndex);
             _title.text = $"SPELL TOME — P{_playerIndex + 1}";
 
-            foreach (var pair in _valueLabels)
+            foreach (var pair in _rows)
             {
+                var row = pair.Value;
                 if (pair.Key == AbilitySlotRole.Ultimate && !PlayerLoadoutService.UltimateSlotUnlocked(meta))
                 {
-                    pair.Value.text = "(Locked)";
+                    row.NameLabel.text = "(Locked)";
+                    row.VialImage.sprite = null;
+                    row.VialImage.color = new Color(1f, 1f, 1f, 0.15f);
                     continue;
                 }
 
                 string id = loadout.GetAbilityId(pair.Key);
-                pair.Value.text = string.IsNullOrEmpty(id)
-                    ? "(Empty)"
-                    : ctx.Content.GetDisplayName(id, id);
+                if (string.IsNullOrEmpty(id))
+                {
+                    row.NameLabel.text = "(Empty)";
+                    row.VialImage.sprite = null;
+                    row.VialImage.color = new Color(1f, 1f, 1f, 0.15f);
+                    continue;
+                }
+
+                var def = AbilityCatalog.Get(id);
+                row.NameLabel.text = def != null ? def.DisplayName : ctx.Content.GetDisplayName(id, id);
+                var sprite = SpellVialSprites.GetForAbility(def) ?? SpellVialSprites.Get(id);
+                row.VialImage.sprite = sprite;
+                row.VialImage.color = sprite != null ? Color.white : new Color(1f, 1f, 1f, 0.2f);
             }
 
             _status.text = "Left/Right or Confirm cycles · Esc/B closes.";

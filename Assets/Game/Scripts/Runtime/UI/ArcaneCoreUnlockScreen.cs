@@ -1,3 +1,4 @@
+using RealmShards;
 using RealmShards.Core;
 using RealmShards.Magic;
 using RealmShards.Save;
@@ -65,16 +66,17 @@ namespace RealmShards.UI
                 string id = abilityIds[i];
                 int cost = costs != null && i < costs.Length ? costs[i] : 15;
                 bool owned = ctx != null && ctx.Progression.IsAbilityUnlocked(id);
-                string name = ctx != null ? ctx.Content.GetDisplayName(id, id) : id;
+                var def = AbilityCatalog.Get(id);
+                string name = def != null ? def.DisplayName : (ctx != null ? ctx.Content.GetDisplayName(id, id) : id);
                 string label = owned ? $"{name} — OWNED" : $"{name} — {cost} Vestiges";
                 Color col = owned
                     ? new Color(0.25f, 0.35f, 0.3f, 1f)
                     : (vestiges >= cost ? new Color(0.15f, 0.4f, 0.45f, 1f) : new Color(0.3f, 0.2f, 0.2f, 1f));
 
-                float yMin = y - 0.08f;
-                var btn = UiFactory.AddButton(transform, $"Unlock_{i}", label,
-                    new Vector2(0.18f, yMin), new Vector2(0.82f, y), Vector2.zero, Vector2.zero, col);
-                btn.GetComponentInChildren<Text>().fontSize = 20;
+                float yMin = y - 0.09f;
+                var vialSprite = SpellVialSprites.GetForAbility(def) ?? SpellVialSprites.Get(id);
+                var btn = UiFactory.AddSpellVialButton(transform, $"Unlock_{i}", vialSprite, label,
+                    new Vector2(0.16f, yMin), new Vector2(0.84f, y), Vector2.zero, Vector2.zero, col);
                 int capturedCost = cost;
                 string capturedId = id;
                 bool capturedOwned = owned;
@@ -84,7 +86,13 @@ namespace RealmShards.UI
                     if (ctx.Progression.TryPurchaseAbilityUnlock(capturedId, capturedCost, out var fail))
                     {
                         vestigeLabel.text = $"Arcane Vestiges: {ctx.Progression.ArcaneVestiges}";
-                        btn.GetComponentInChildren<Text>().text = $"{ctx.Content.GetDisplayName(capturedId, capturedId)} — OWNED";
+                        var purchasedDef = AbilityCatalog.Get(capturedId);
+                        string purchasedName = purchasedDef != null
+                            ? purchasedDef.DisplayName
+                            : ctx.Content.GetDisplayName(capturedId, capturedId);
+                        var labelText = btn.transform.Find("Label")?.GetComponent<Text>();
+                        if (labelText != null)
+                            labelText.text = $"{purchasedName} — OWNED";
                         btn.GetComponent<Image>().color = new Color(0.25f, 0.35f, 0.3f, 1f);
                     }
                     else
@@ -98,7 +106,7 @@ namespace RealmShards.UI
                     Selectable = btn,
                     OnConfirm = () => btn.onClick.Invoke()
                 });
-                y -= 0.09f;
+                y -= 0.1f;
             }
 
             var cont = UiFactory.AddButton(transform, "Continue", "Continue",
