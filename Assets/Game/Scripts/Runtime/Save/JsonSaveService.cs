@@ -157,11 +157,13 @@ namespace RealmShards.Save
                     data.meta.equippedAbilityIds[i] = string.Empty;
             }
 
-            // Ensure at least slot 0 has the basic bolt when empty.
-            if (string.IsNullOrEmpty(data.meta.equippedAbilityIds[0]) &&
-                data.meta.unlockedAbilityIds.Contains(ContentIdDefaults.AbilityBasicBolt))
+            // Ensure at least slot 0 has a primary when empty.
+            if (string.IsNullOrEmpty(data.meta.equippedAbilityIds[0]))
             {
-                data.meta.equippedAbilityIds[0] = ContentIdDefaults.AbilityBasicBolt;
+                if (data.meta.unlockedAbilityIds.Contains(ContentIdDefaults.AbilityAirBullet))
+                    data.meta.equippedAbilityIds[0] = ContentIdDefaults.AbilityAirBullet;
+                else if (data.meta.unlockedAbilityIds.Contains(ContentIdDefaults.AbilityBasicBolt))
+                    data.meta.equippedAbilityIds[0] = ContentIdDefaults.AbilityBasicBolt;
             }
 
             EnsureCity(data.meta.unlockedCityIds, ContentIdDefaults.CityStarter);
@@ -218,6 +220,30 @@ namespace RealmShards.Save
             if (data.version < 10)
                 data.meta.vials = Mathf.Max(0, data.meta.vials);
 
+            if (data.version < 11)
+            {
+                EnsureAbilityUnlocked(data.meta.unlockedAbilityIds, ContentIdDefaults.AbilityAirBullet);
+                PlayerLoadoutService.EnsureLoadouts(data.meta);
+                for (int i = 0; i < data.meta.playerLoadouts.Count; i++)
+                {
+                    var loadout = data.meta.playerLoadouts[i];
+                    if (loadout.primaryId == ContentIdDefaults.AbilityBasicBolt
+                        || string.IsNullOrEmpty(loadout.primaryId))
+                    {
+                        loadout.primaryId = ContentIdDefaults.AbilityAirBullet;
+                    }
+                }
+
+                if (data.meta.equippedAbilityIds.Count > 0
+                    && (data.meta.equippedAbilityIds[0] == ContentIdDefaults.AbilityBasicBolt
+                        || string.IsNullOrEmpty(data.meta.equippedAbilityIds[0])))
+                {
+                    data.meta.equippedAbilityIds[0] = ContentIdDefaults.AbilityAirBullet;
+                }
+
+                PlayerLoadoutService.MirrorPrimaryToLegacy(data.meta);
+            }
+
             data.meta.decade = data.meta.year / 10;
             data.version = SaveData.CurrentVersion;
             return data;
@@ -234,6 +260,12 @@ namespace RealmShards.Save
         }
 
         private static void EnsureCity(System.Collections.Generic.List<string> list, string id)
+        {
+            if (!list.Contains(id))
+                list.Add(id);
+        }
+
+        private static void EnsureAbilityUnlocked(System.Collections.Generic.List<string> list, string id)
         {
             if (!list.Contains(id))
                 list.Add(id);

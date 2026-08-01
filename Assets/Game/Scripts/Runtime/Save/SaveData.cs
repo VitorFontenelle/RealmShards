@@ -9,7 +9,7 @@ namespace RealmShards.Save
     [Serializable]
     public sealed class SaveData
     {
-        public const int CurrentVersion = 10;
+        public const int CurrentVersion = 11;
 
         public int version = CurrentVersion;
         public long lastSavedUnixUtc;
@@ -28,13 +28,14 @@ namespace RealmShards.Save
 
         public List<string> unlockedAbilityIds = new List<string>
         {
+            ContentIdDefaults.AbilityAirBullet,
             ContentIdDefaults.AbilityBasicBolt
         };
 
         /// <summary>Shared loadout slots (Stage 2: applied to all local players).</summary>
         public List<string> equippedAbilityIds = new List<string>
         {
-            ContentIdDefaults.AbilityBasicBolt,
+            ContentIdDefaults.AbilityAirBullet,
             string.Empty,
             string.Empty,
             string.Empty
@@ -94,6 +95,7 @@ namespace RealmShards.Save
     public static class ContentIdDefaults
     {
         public const string AbilityBasicBolt = "ability.basic_bolt";
+        public const string AbilityAirBullet = "ability.air_bullet";
         public const string AbilityArcanePulse = "ability.arcane_pulse";
         public const string AbilityBlinkStep = "ability.blink_step";
         public const string AbilityDash = "ability.blink_step";

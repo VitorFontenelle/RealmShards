@@ -42,6 +42,8 @@ namespace RealmShards
         [SerializeField] private bool dashInvulnerable = true;
         [SerializeField] private bool applyStatusesToSelf;
         [SerializeField] private StatusApplication[] statusEffects;
+        [SerializeField] private int comboHits = 1;
+        [SerializeField] private bool useMissVanish;
 
         [Header("Prefabs")]
         [SerializeField] private GameObject projectilePrefab;
@@ -72,6 +74,8 @@ namespace RealmShards
         public float DashDuration => dashDuration;
         public bool DashInvulnerable => dashInvulnerable;
         public bool ApplyStatusesToSelf => applyStatusesToSelf;
+        public int ComboHits => Mathf.Max(1, comboHits);
+        public bool UseMissVanish => useMissVanish;
         public GameObject ProjectilePrefab => projectilePrefab;
         public GameObject HitboxPrefab => hitboxPrefab;
         public GameObject EffectOverlayPrefab => effectOverlayPrefab;
@@ -113,6 +117,12 @@ namespace RealmShards
         }
 
         public void EditorSetApplyStatusesToSelf(bool value) => applyStatusesToSelf = value;
+
+        public void EditorSetCombo(int hits, bool missVanish = false)
+        {
+            comboHits = Mathf.Max(1, hits);
+            useMissVanish = missVanish;
+        }
 #endif
     }
 }

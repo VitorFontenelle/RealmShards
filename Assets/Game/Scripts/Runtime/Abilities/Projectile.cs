@@ -1,3 +1,4 @@
+using RealmShards.Core;
 using UnityEngine;
 
 namespace RealmShards
@@ -18,6 +19,13 @@ namespace RealmShards
         private FactionMember _owner;
         private float _timer;
         private bool _active;
+        private bool _vanishing;
+        private float _distanceTraveled;
+        private float _maxTravelRange;
+        private bool _useRangeLimit;
+        private bool _playMissVanish;
+        private Vector2 _lastPosition;
+        private ProjectileSheetAnimator _sheetAnimator;
         private System.Action<DamageInfo, Health> _onHit;
         private readonly System.Collections.Generic.HashSet<int> _hitIds = new System.Collections.Generic.HashSet<int>();
         private Camera _cam;
@@ -26,9 +34,7 @@ namespace RealmShards
         {
             _body = GetComponent<Rigidbody2D>();
             if (_body == null)
-            {
                 _body = gameObject.AddComponent<Rigidbody2D>();
-            }
 
             _body.gravityScale = 0f;
             _body.collisionDetectionMode = CollisionDetectionMode2D.Continuous;
@@ -38,53 +44,65 @@ namespace RealmShards
             col.isTrigger = true;
 
             if (spriteRenderer == null)
-            {
                 spriteRenderer = GetComponent<SpriteRenderer>();
-            }
 
+            _sheetAnimator = GetComponent<ProjectileSheetAnimator>();
             EnsureVisibleSorting();
             CombatLayers.TrySetLayer(gameObject, CombatLayers.Projectile);
         }
 
         private void Update()
         {
-            if (!_active)
+            if (!_active || _vanishing)
+                return;
+
+            _sheetAnimator?.TickFlight(Time.deltaTime);
+
+            _timer -= Time.deltaTime;
+            if (_timer <= 0f)
             {
+                BeginMissExpire();
                 return;
             }
 
-            _timer -= Time.deltaTime;
-            if (_timer <= 0f || IsOffscreen())
+            if (_useRangeLimit)
             {
-                Despawn();
+                Vector2 pos = transform.position;
+                _distanceTraveled += Vector2.Distance(_lastPosition, pos);
+                _lastPosition = pos;
+                if (_distanceTraveled >= _maxTravelRange)
+                    BeginMissExpire();
+                return;
             }
+
+            if (IsOffscreen())
+                Despawn();
         }
 
         private void FixedUpdate()
         {
-            if (!_active || _body == null)
-            {
+            if (!_active || _vanishing || _body == null)
                 return;
-            }
 
             _body.linearVelocity = transform.right * speed;
         }
 
-        public void OnSpawned(PrefabPool pool)
-        {
-            _pool = pool;
-        }
+        public void OnSpawned(PrefabPool pool) => _pool = pool;
 
         public void OnDespawned()
         {
             _active = false;
+            _vanishing = false;
             _hitIds.Clear();
             _owner = null;
             _onHit = null;
+            _useRangeLimit = false;
+            _playMissVanish = false;
+            _distanceTraveled = 0f;
             if (_body != null)
-            {
                 _body.linearVelocity = Vector2.zero;
-            }
+            if (spriteRenderer != null)
+                spriteRenderer.color = Color.white;
         }
 
         public void Launch(
@@ -97,15 +115,15 @@ namespace RealmShards
             float life,
             bool canPierce,
             Color tint,
-            System.Action<DamageInfo, Health> onHit = null)
+            System.Action<DamageInfo, Health> onHit = null,
+            float maxTravelRange = 0f,
+            bool playMissVanish = false)
         {
             EnsureVisibleSorting();
 
             transform.position = new Vector3(position.x, position.y, 0f);
             if (direction.sqrMagnitude < 0.001f)
-            {
                 direction = Vector2.right;
-            }
 
             direction.Normalize();
             float angle = Mathf.Atan2(direction.y, direction.x) * Mathf.Rad2Deg;
@@ -115,20 +133,24 @@ namespace RealmShards
             damage = damageAmount;
             knockback = knockbackForce;
             speed = moveSpeed;
-            // Prefer long travel; primary despawn is leaving the camera view.
-            lifetime = Mathf.Max(life, 8f);
+            lifetime = maxTravelRange > 0.01f ? Mathf.Max(life, 2f) : Mathf.Max(life, 8f);
             pierce = canPierce;
             _onHit = onHit;
             _timer = lifetime;
             _hitIds.Clear();
             _active = true;
+            _vanishing = false;
+            _useRangeLimit = maxTravelRange > 0.01f;
+            _maxTravelRange = maxTravelRange;
+            _playMissVanish = playMissVanish;
+            _distanceTraveled = 0f;
+            _lastPosition = position;
             _cam = Camera.main;
 
             if (spriteRenderer != null)
-            {
                 spriteRenderer.color = tint;
-            }
 
+            _sheetAnimator?.ResetFlight();
             gameObject.SetActive(true);
         }
 
@@ -139,7 +161,7 @@ namespace RealmShards
             if (spriteRenderer == null)
                 return;
 
-            spriteRenderer.sortingLayerName = Core.SortingLayers.SkillEffectsFront;
+            spriteRenderer.sortingLayerName = SortingLayers.SkillEffectsFront;
             if (spriteRenderer.sortingOrder < 20)
                 spriteRenderer.sortingOrder = 20;
         }
@@ -160,25 +182,22 @@ namespace RealmShards
 
         private void OnTriggerEnter2D(Collider2D other)
         {
-            if (!_active)
-            {
+            if (!_active || _vanishing)
                 return;
-            }
+
+            if (TryHandleEnvironmentHit(other))
+                return;
 
             var hurtbox = other.GetComponent<Hurtbox>() ?? other.GetComponentInParent<Hurtbox>();
             if (hurtbox != null && hurtbox.Health != null)
             {
                 int id = hurtbox.Health.GetEntityId().GetHashCode();
                 if (_hitIds.Contains(id))
-                {
                     return;
-                }
 
                 var targetFaction = hurtbox.FactionMember ?? hurtbox.Health.GetComponent<FactionMember>();
                 if (_owner != null && targetFaction != null && !_owner.CanHarm(targetFaction))
-                {
                     return;
-                }
 
                 Vector2 dir = transform.right;
                 var info = DamageInfo.Create(
@@ -193,9 +212,7 @@ namespace RealmShards
                     _hitIds.Add(id);
                     _onHit?.Invoke(info, hurtbox.Health);
                     if (!pierce)
-                    {
                         Despawn();
-                    }
                 }
 
                 return;
@@ -203,9 +220,7 @@ namespace RealmShards
 
             var damageable = other.GetComponentInParent<IDamageable>();
             if (damageable == null || !damageable.IsAlive)
-            {
                 return;
-            }
 
             if (_owner != null &&
                 damageable.Faction == _owner.Faction &&
@@ -217,9 +232,7 @@ namespace RealmShards
 
             int did = damageable is MonoBehaviour mb ? mb.GetEntityId().GetHashCode() : damageable.GetHashCode();
             if (_hitIds.Contains(did))
-            {
                 return;
-            }
 
             var dmgInfo = DamageInfo.Create(
                 damage,
@@ -232,23 +245,47 @@ namespace RealmShards
             {
                 _hitIds.Add(did);
                 if (!pierce)
-                {
                     Despawn();
-                }
             }
+        }
+
+        private bool TryHandleEnvironmentHit(Collider2D other)
+        {
+            if (other.isTrigger)
+                return false;
+            if (other.GetComponent<Hurtbox>() != null || other.GetComponentInParent<Hurtbox>() != null)
+                return false;
+
+            if (other.gameObject.layer != GameLayers.Environment)
+                return false;
+
+            BeginMissExpire();
+            return true;
+        }
+
+        private void BeginMissExpire()
+        {
+            if (_vanishing)
+                return;
+
+            _active = false;
+            if (_body != null)
+                _body.linearVelocity = Vector2.zero;
+
+            if (_playMissVanish && _sheetAnimator != null && _sheetAnimator.PlayVanish(Despawn))
+                _vanishing = true;
+            else
+                Despawn();
         }
 
         private void Despawn()
         {
             _active = false;
+            _vanishing = false;
             if (_pool != null)
-            {
                 _pool.Release(gameObject);
-            }
             else
-            {
                 gameObject.SetActive(false);
-            }
         }
     }
 }

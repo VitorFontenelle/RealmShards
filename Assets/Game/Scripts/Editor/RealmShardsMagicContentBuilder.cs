@@ -18,16 +18,21 @@ namespace RealmShards.Editor
             EnsureFolder("Assets/Game/Data/Cities");
 
             var projectile = AssetDatabase.LoadAssetAtPath<GameObject>("Assets/Game/Prefabs/Projectiles/ArcaneBolt.prefab");
+            var airBulletProjectile = AssetDatabase.LoadAssetAtPath<GameObject>("Assets/Game/Prefabs/Projectiles/AirBullet.prefab");
             var hitbox = AssetDatabase.LoadAssetAtPath<GameObject>("Assets/Game/Prefabs/Combat/MeleeHitbox.prefab");
             var overlay = AssetDatabase.LoadAssetAtPath<GameObject>("Assets/Game/Prefabs/Combat/CastOverlay.prefab");
 
             // Neutral
+            var airBullet = MakeAbility("AirBullet", ContentIdDefaults.AbilityAirBullet, "Air Bullet",
+                AbilityKind.Projectile, 0.3f, 8f, 1.5f, 0, ContentIdDefaults.SchoolNeutral, MagicElement.Arcane);
+            airBullet.EditorSetCombo(3, missVanish: true);
             var bolt = MakeAbility("ArcaneBolt", ContentIdDefaults.AbilityBasicBolt, "Arcane Bolt",
                 AbilityKind.Projectile, 0.35f, 14f, 2.5f, 0, ContentIdDefaults.SchoolNeutral, MagicElement.Arcane);
             var pulse = MakeAbility("ArcanePulse", ContentIdDefaults.AbilityArcanePulse, "Arcane Pulse",
                 AbilityKind.MeleeHitbox, 0.55f, 18f, 5f, 15, ContentIdDefaults.SchoolNeutral, MagicElement.Arcane);
             var blink = MakeAbility("BlinkStep", ContentIdDefaults.AbilityBlinkStep, "Blink Step",
                 AbilityKind.Dash, 0.85f, 0f, 0f, 20, ContentIdDefaults.SchoolNeutral, MagicElement.Kinetic);
+            Wire(airBullet, airBulletProjectile, hitbox, overlay);
             Wire(bolt, projectile, hitbox, overlay);
             Wire(pulse, projectile, hitbox, overlay);
             Wire(blink, projectile, hitbox, overlay);
@@ -80,9 +85,10 @@ namespace RealmShards.Editor
             Wire(bastion, projectile, hitbox, overlay);
             Wire(howl, projectile, hitbox, overlay);
 
+            TuneAirBullet(airBullet);
             MakeSchool(ContentIdDefaults.SchoolNeutral, "Neutral Arcana", "Baseline Magus craft.",
                 new Color(0.7f, 0.5f, 0.95f),
-                new[] { ContentIdDefaults.AbilityBasicBolt, ContentIdDefaults.AbilityArcanePulse, ContentIdDefaults.AbilityBlinkStep });
+                new[] { ContentIdDefaults.AbilityAirBullet, ContentIdDefaults.AbilityBasicBolt, ContentIdDefaults.AbilityArcanePulse, ContentIdDefaults.AbilityBlinkStep });
             MakeSchool(ContentIdDefaults.SchoolGilded, "Gilded Ward", "Forge-fire of the golden city.",
                 new Color(1f, 0.75f, 0.25f),
                 new[] { ContentIdDefaults.AbilityGildedFlare, ContentIdDefaults.AbilityGildedSmite, ContentIdDefaults.AbilityGildedBastion });
@@ -128,6 +134,20 @@ namespace RealmShards.Editor
             if (a == null) return;
             a.SetPrefabs(p, h, o);
             EditorUtility.SetDirty(a);
+        }
+
+        private static void TuneAirBullet(AbilityDefinition ability)
+        {
+            if (ability == null) return;
+            var so = new SerializedObject(ability);
+            so.FindProperty("windup").floatValue = 0.02f;
+            so.FindProperty("activeDuration").floatValue = 0f;
+            so.FindProperty("recovery").floatValue = 0.03f;
+            so.FindProperty("castLockMovement").floatValue = 0f;
+            so.FindProperty("range").floatValue = 4f;
+            so.FindProperty("projectileSpeed").floatValue = 14f;
+            so.ApplyModifiedPropertiesWithoutUndo();
+            EditorUtility.SetDirty(ability);
         }
 
         private static void MakeSchool(string id, string name, string desc, Color accent, string[] abilities)

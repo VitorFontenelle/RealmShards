@@ -67,7 +67,8 @@ namespace RealmShards.Progression
 
         private static bool IsPrimaryCandidate(AbilityDefinition def)
         {
-            return def.ContentId == ContentIdDefaults.AbilityBasicBolt
+            return def.ContentId == ContentIdDefaults.AbilityAirBullet
+                   || def.ContentId == ContentIdDefaults.AbilityBasicBolt
                    || def.Cooldown <= 0.5f && def.Damage <= 18f;
         }
 

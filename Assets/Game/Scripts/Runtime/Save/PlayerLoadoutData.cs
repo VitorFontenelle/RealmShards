@@ -6,7 +6,7 @@ namespace RealmShards.Save
     [Serializable]
     public sealed class PlayerLoadoutData
     {
-        public string primaryId = ContentIdDefaults.AbilityBasicBolt;
+        public string primaryId = ContentIdDefaults.AbilityAirBullet;
         public string dashId = ContentIdDefaults.AbilityDash;
         public string signatureId = string.Empty;
         public string ultimateId = string.Empty;

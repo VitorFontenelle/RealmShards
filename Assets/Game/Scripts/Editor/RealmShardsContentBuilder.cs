@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using RealmShards.Core;
+using RealmShards.Save;
 using UnityEditor;
 using UnityEditor.SceneManagement;
 using UnityEngine;
@@ -14,6 +15,7 @@ namespace RealmShards.Editor
     {
         private const string PlayerPrefabPath = "Assets/Game/Prefabs/Characters/Player.prefab";
         private const string ProjectilePrefabPath = "Assets/Game/Prefabs/Projectiles/ArcaneBolt.prefab";
+        private const string AirBulletPrefabPath = "Assets/Game/Prefabs/Projectiles/AirBullet.prefab";
         private const string HitboxPrefabPath = "Assets/Game/Prefabs/Combat/MeleeHitbox.prefab";
         private const string OverlayPrefabPath = "Assets/Game/Prefabs/Combat/CastOverlay.prefab";
         private const string PickupPrefabPath = "Assets/Game/Prefabs/Pickups/ItemPickup.prefab";
@@ -54,22 +56,27 @@ namespace RealmShards.Editor
             var animSet = BuildAnimationSet();
             var material = BuildMaterial();
             var projectile = BuildProjectilePrefab();
+            var airBulletProjectile = BuildAirBulletProjectilePrefab();
             var hitbox = BuildHitboxPrefab();
             var overlay = BuildOverlayPrefab();
             var pickup = BuildPickupPrefab();
+            var airBullet = BuildAbility("AirBullet", ContentIdDefaults.AbilityAirBullet, AbilityKind.Projectile, 0.3f, 8f, 1.5f, 0);
             var bolt = BuildAbility("ArcaneBolt", "ability.basic_bolt", AbilityKind.Projectile, 0.35f, 14f, 2.5f, 0);
             var pulse = BuildAbility("ArcanePulse", "ability.arcane_pulse", AbilityKind.MeleeHitbox, 0.55f, 18f, 5f, 15);
             var blink = BuildAbility("BlinkStep", "ability.blink_step", AbilityKind.Dash, 0.85f, 0f, 0f, 20);
+            TuneAbility(airBullet, windup: 0.02f, active: 0f, recovery: 0.03f, range: 4f, speed: 14f);
             TuneAbility(bolt, windup: 0.05f, active: 0.05f, recovery: 0.1f, range: 9f, speed: 13f);
             TuneAbility(pulse, windup: 0.08f, active: 0.12f, recovery: 0.18f, hitDistance: 0.8f, hitRadius: 0.95f);
             TuneAbility(blink, windup: 0.02f, active: 0.12f, recovery: 0.08f, dashDistance: 3.4f, dashDuration: 0.12f);
+            airBullet.EditorSetCombo(3, missVanish: true);
+            ConfigureAbilityPrefabs(airBullet, airBulletProjectile, hitbox, overlay);
             ConfigureAbilityPrefabs(bolt, projectile, hitbox, overlay);
             ConfigureAbilityPrefabs(pulse, projectile, hitbox, overlay);
             ConfigureAbilityPrefabs(blink, projectile, hitbox, overlay);
 
             RealmShardsItemContentBuilder.BuildAll();
 
-            var player = BuildPlayerPrefab(animSet, material, bolt, null, null, null, projectile, hitbox, overlay, pickup);
+            var player = BuildPlayerPrefab(animSet, material, airBullet, null, null, null, airBulletProjectile, hitbox, overlay, pickup);
             BuildDummyPrefab();
 
             AssetDatabase.SaveAssets();
@@ -298,6 +305,36 @@ namespace RealmShards.Editor
             CombatLayers.TrySetLayer(root, CombatLayers.Projectile);
 
             var prefab = PrefabUtility.SaveAsPrefabAsset(root, ProjectilePrefabPath);
+            Object.DestroyImmediate(root);
+            return prefab;
+        }
+
+        private static GameObject BuildAirBulletProjectilePrefab()
+        {
+            var root = new GameObject("AirBullet");
+            var sr = root.AddComponent<SpriteRenderer>();
+            sr.sortingLayerName = SortingLayers.SkillEffectsFront;
+            sr.sortingOrder = 22;
+
+            var rb = root.AddComponent<Rigidbody2D>();
+            rb.gravityScale = 0f;
+            rb.collisionDetectionMode = CollisionDetectionMode2D.Continuous;
+
+            var col = root.AddComponent<CircleCollider2D>();
+            col.isTrigger = true;
+            col.radius = 0.14f;
+
+            root.AddComponent<Projectile>();
+            var anim = root.AddComponent<ProjectileSheetAnimator>();
+            var animSo = new SerializedObject(anim);
+            animSo.FindProperty("resourcesPath").stringValue = "Spells/air_bullet";
+            animSo.FindProperty("frameCount").intValue = 4;
+            animSo.FindProperty("flightFrameCount").intValue = 3;
+            animSo.ApplyModifiedPropertiesWithoutUndo();
+
+            CombatLayers.TrySetLayer(root, CombatLayers.Projectile);
+
+            var prefab = PrefabUtility.SaveAsPrefabAsset(root, AirBulletPrefabPath);
             Object.DestroyImmediate(root);
             return prefab;
         }

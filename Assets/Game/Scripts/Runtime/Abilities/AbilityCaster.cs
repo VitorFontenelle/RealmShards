@@ -26,6 +26,9 @@ namespace RealmShards
         private readonly float[] _cooldownRemaining = new float[SlotCount];
         private bool _casting;
         private Coroutine _castRoutine;
+        private int _comboStep;
+        private float _comboResetAt;
+        private const float ComboWindowSeconds = 0.65f;
 
         public bool IsCasting => _casting;
         public AbilityDefinition BasicAbility => basicAbility;
@@ -105,19 +108,51 @@ namespace RealmShards
 
         public bool TryCast(int slot, Vector2 aimDirection)
         {
-            if (_casting || !isActiveAndEnabled)
+            if (!isActiveAndEnabled)
                 return false;
 
             var ability = GetAbility(slot);
-            if (ability == null || _cooldownRemaining[slot] > 0f)
+            if (ability == null)
                 return false;
 
+            if (ability.ComboHits > 1)
+                return TryCastCombo(slot, ability, aimDirection);
+
+            if (_casting || _cooldownRemaining[slot] > 0f)
+                return false;
+
+            return BeginCast(slot, ability, aimDirection, applyCooldown: true);
+        }
+
+        private bool TryCastCombo(int slot, AbilityDefinition ability, Vector2 aimDirection)
+        {
+            if (_casting)
+                return false;
+
+            if (Time.time > _comboResetAt)
+                _comboStep = 0;
+
+            if (_comboStep == 0 && _cooldownRemaining[slot] > 0f)
+                return false;
+
+            _comboStep++;
+            bool finisher = _comboStep >= ability.ComboHits;
+            if (finisher)
+                _comboStep = 0;
+            else
+                _comboResetAt = Time.time + ComboWindowSeconds;
+
+            return BeginCast(slot, ability, aimDirection, applyCooldown: finisher);
+        }
+
+        private bool BeginCast(int slot, AbilityDefinition ability, Vector2 aimDirection, bool applyCooldown)
+        {
             if (aimDirection.sqrMagnitude < 0.001f)
                 aimDirection = Vector2.right;
 
             aimDirection.Normalize();
             animator?.SetFacingFromVector(aimDirection);
-            _castRoutine = StartCoroutine(CastRoutine(slot, ability, aimDirection));
+            _castRoutine = StartCoroutine(CastRoutine(slot, ability, aimDirection, applyCooldown));
             return true;
         }
 
@@ -133,13 +168,14 @@ namespace RealmShards
             motor?.SetCastLocked(false);
         }
 
-        private IEnumerator CastRoutine(int slot, AbilityDefinition ability, Vector2 aim)
+        private IEnumerator CastRoutine(int slot, AbilityDefinition ability, Vector2 aim, bool applyCooldown)
         {
             _currentCastSlot = slot;
             _casting = true;
             animator?.PlayCast();
             motor?.SetCastLocked(true);
-            SpawnOverlay(ability, aim);
+            if (ability.ComboHits <= 1)
+                SpawnOverlay(ability, aim);
 
             if (ability.Windup > 0f)
                 yield return new WaitForSeconds(ability.Windup);
@@ -154,7 +190,8 @@ namespace RealmShards
             if (ability.Recovery > 0f)
                 yield return new WaitForSeconds(ability.Recovery);
 
-            _cooldownRemaining[slot] = EffectiveCooldown(ability);
+            if (applyCooldown)
+                _cooldownRemaining[slot] = EffectiveCooldown(ability);
             _casting = false;
             _castRoutine = null;
 
@@ -253,6 +290,12 @@ namespace RealmShards
         {
             bool pierce = ability.Pierce || (modifiers != null && modifiers.BoltPierce);
             int extras = modifiers != null ? modifiers.BoltSplitExtra : 0;
+            if (ability.ComboHits > 1)
+            {
+                pierce = false;
+                extras = 0;
+            }
+
             int total = 1 + extras;
             float spread = extras > 0 ? 18f : 0f;
 
@@ -300,7 +343,9 @@ namespace RealmShards
                 12f,
                 pierce,
                 projectileTint,
-                OnProjectileHit);
+                OnProjectileHit,
+                ability.Range,
+                ability.UseMissVanish);
         }
 
         private void OnProjectileHit(DamageInfo info, Health victim)
