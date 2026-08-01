@@ -127,6 +127,7 @@ namespace RealmShards.World
             _wardrobe = WardrobePedestal.Create(_arena.Root, _arena.WardrobeSpawn.position);
             _vendor = ItemsVendorDisplay.Create(_arena.Root, _arena.VendorSpawn.position);
             RefreshVendorDisplay();
+            LobbyTrainingDoll.Create(_arena.Root, _arena.TrainingDollSpawn.position);
             _exitCollider = _arena.ExitTrigger.GetComponent<BoxCollider2D>();
         }
 
@@ -232,10 +233,10 @@ namespace RealmShards.World
                 instance.name = $"LobbyPlayer_{playerIndex + 1}";
                 try { instance.tag = "Player"; } catch { }
                 instance.GetComponent<PlayerController>()?.InitializePlayer(playerIndex);
-                // Lobby is console-style exploration — no combat casts while browsing pedestals.
+                // Lobby allows spell testing on the training doll.
                 var caster = instance.GetComponent<AbilityCaster>();
                 if (caster != null)
-                    caster.enabled = false;
+                    caster.enabled = true;
                 var slot = _lobby.GetSlot(playerIndex);
                 var pi = instance.GetComponent<PlayerInput>();
                 if (pi != null && slot.PrimaryDevice != null)
