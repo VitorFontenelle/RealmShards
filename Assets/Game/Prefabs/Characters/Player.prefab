@@ -669,11 +669,11 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 63c6f25fc1060c7429dfc84fc52a3593, type: 3}
   m_Name: 
   m_EditorClassIdentifier: RealmShards.Runtime::RealmShards.AbilityCaster
-  basicAbility: {fileID: 11400000, guid: 35169d268f447964bb1fff416784a515, type: 2}
+  basicAbility: {fileID: 11400000, guid: 9300804e42e14f98f84c066f6f2043bf, type: 2}
   ability1: {fileID: 0}
   ability2: {fileID: 0}
   ability3: {fileID: 0}
-  defaultProjectilePrefab: {fileID: 4202646356305797159, guid: fc3614e5a6c567243a2c12cf7624d6a7, type: 3}
+  defaultProjectilePrefab: {fileID: 1429129115093618991, guid: bb76de444c81c3f17b00279b0280d06e, type: 3}
   defaultHitboxPrefab: {fileID: 4752176303087100548, guid: 35f46060f3651f64283a4abc4bbe23db, type: 3}
   defaultOverlayPrefab: {fileID: 7572658101136377820, guid: 82ac60edced77d24ebc93037c3131717, type: 3}
   factionMember: {fileID: 1709304296850451941}

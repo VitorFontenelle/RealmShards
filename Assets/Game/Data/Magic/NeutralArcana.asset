@@ -18,6 +18,7 @@ MonoBehaviour:
   accentColor: {r: 0.7, g: 0.5, b: 0.95, a: 1}
   icon: {fileID: 0}
   abilityIds:
+  - ability.air_bullet
   - ability.basic_bolt
   - ability.arcane_pulse
   - ability.blink_step

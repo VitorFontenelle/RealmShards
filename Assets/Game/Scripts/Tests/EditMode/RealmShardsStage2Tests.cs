@@ -262,4 +262,21 @@ namespace RealmShards.Tests.EditMode
             Assert.AreEqual(0, session.RunCoins);
         }
     }
+
+    public sealed class AirBulletTests
+    {
+        [Test]
+        public void New_Save_Defaults_To_Air_Bullet_Primary()
+        {
+            var save = new JsonSaveService("test_air_bullet_save.json");
+            save.DeleteSave();
+            var data = save.LoadOrCreate();
+
+            Assert.Contains(ContentIdDefaults.AbilityAirBullet, data.meta.unlockedAbilityIds);
+            Assert.AreEqual(ContentIdDefaults.AbilityAirBullet, data.meta.equippedAbilityIds[0]);
+            Assert.AreEqual(ContentIdDefaults.AbilityAirBullet, PlayerLoadoutService.GetLoadout(data.meta, 0).primaryId);
+
+            save.DeleteSave();
+        }
+    }
 }

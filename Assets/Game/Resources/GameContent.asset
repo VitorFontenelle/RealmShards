@@ -295,6 +295,7 @@ MonoBehaviour:
   - {fileID: 764891890596544140, guid: 3f2a4ac831e7ef3478726066c01f7a8c, type: 3}
   mageIdleSprite: {fileID: -5071563641634004584, guid: 447f1a42a94706b46b8cc17cf172c34b, type: 3}
   abilities:
+  - {fileID: 11400000, guid: 9300804e42e14f98f84c066f6f2043bf, type: 2}
   - {fileID: 11400000, guid: 385821925d44a064a825b5d3a7b70a2e, type: 2}
   - {fileID: 11400000, guid: 9a1cdb248640c4648a817853c337d747, type: 2}
   - {fileID: 11400000, guid: 29ec3e07ccd91f244bf6fa4fc0ba0f2d, type: 2}
