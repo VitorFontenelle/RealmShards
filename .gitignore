@@ -98,5 +98,8 @@ crashlytics-build.properties
 /[Aa]ssets/[Gg]ame/[Dd]ata/.realmshards_player_setup
 /[Aa]ssets/[Gg]ame/[Dd]ata/.stage2_setup_done
 
+# Cloud Agent build install marker (baked into environment builds, not committed)
+.cursor/.build-setup-complete
+
 # Unity Editor scene-template defaults (machine-local, regenerated on open)
 /[Pp]roject[Ss]ettings/[Ss]cene[Tt]emplate[Ss]ettings.json

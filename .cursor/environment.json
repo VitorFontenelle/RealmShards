@@ -1,0 +1,7 @@
+{
+  "name": "RealmShards",
+  "user": "ubuntu",
+  "snapshot": "bld-20260805-0c0756dd-ee79-436c-a14b-49f1b0f454ca",
+  "install": "bash .cursor/scripts/install.sh",
+  "start": "bash .cursor/scripts/start.sh"
+}
