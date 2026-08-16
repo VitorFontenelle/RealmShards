@@ -12,7 +12,7 @@
 
 ## Download and install (Windows)
 
-1. Download the current `RealmShards-Setup-*.exe` from this project's release assets.
+1. Download **`RealmShards-Setup-1.0.0.exe`** from the latest [GitHub Release](https://github.com/VitorFontenelle/RealmShards/releases/latest).
 2. Run the installer and accept the install location (or choose another folder).
 3. Launch **RealmShards** from the Start menu or the optional desktop shortcut.
 4. In the Hub, press **Space** to join with keyboard/mouse or **A / Start** on an unclaimed gamepad, then select **Start Run**.
